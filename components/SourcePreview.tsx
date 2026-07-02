@@ -1,0 +1,105 @@
+import { CHANNEL_ICON, CHANNEL_LABEL, formatDateTime } from "@/lib/format";
+import type { Order } from "@/lib/types";
+
+/** 元データプレビュー (§6.2 / §8) — チャネルごとに見た目を出し分ける */
+export function SourcePreview({ order }: { order: Order }) {
+  const p = order.sourcePreview;
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-surface-border bg-white shadow-card">
+      <div className="flex items-center justify-between border-b border-surface-border bg-surface-sunken px-4 py-2.5">
+        <div className="flex items-center gap-2 text-sm font-medium text-ink-soft">
+          <span aria-hidden>{CHANNEL_ICON[order.channel]}</span>
+          {CHANNEL_LABEL[order.channel]}・{order.sourceName}
+        </div>
+        <span className="text-[11px] text-ink-muted">{formatDateTime(order.receivedAt)} 受信</span>
+      </div>
+
+      <div className="p-4">
+        {p?.kind === "fax_image" ? (
+          <FaxPreview header={p.header} lines={p.faxLines ?? []} />
+        ) : p?.kind === "email" ? (
+          <EmailPreview header={p.header} body={p.body ?? ""} />
+        ) : p?.kind === "chat" ? (
+          <ChatPreview header={p.header} body={p.body ?? ""} channel={order.channel} />
+        ) : p?.kind === "edi" ? (
+          <EdiPreview header={p.header} body={p.body ?? ""} />
+        ) : (
+          <p className="text-sm text-ink-muted">元データプレビューはありません。</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FaxPreview({ header, lines }: { header?: string; lines: { text: string; readable: boolean }[] }) {
+  return (
+    <div>
+      {header ? <div className="mb-2 text-[11px] text-ink-muted">{header}</div> : null}
+      <div className="rounded-lg border border-gray-300 bg-[repeating-linear-gradient(0deg,#fafafa,#fafafa_22px,#f0f0f0_23px)] p-4 font-mono text-[13px] leading-6 text-gray-800 shadow-inner">
+        {lines.map((l, i) =>
+          l.readable ? (
+            <div key={i} className="whitespace-pre-wrap">{l.text}</div>
+          ) : (
+            <div
+              key={i}
+              className="whitespace-pre-wrap rounded bg-yellow-100/80 px-1 text-gray-500 [text-shadow:0_0_3px_rgba(0,0,0,0.35)]"
+              title="AIが読み取れなかった箇所"
+            >
+              {l.text}
+              <span className="ml-2 rounded bg-red-100 px-1 text-[10px] font-sans font-medium text-red-600">読取不可</span>
+            </div>
+          ),
+        )}
+      </div>
+      <p className="mt-2 text-[11px] text-ink-muted">
+        ※ 黄色ハイライト部分はAIが読み取れなかった箇所です
+      </p>
+    </div>
+  );
+}
+
+function EmailPreview({ header, body }: { header?: string; body: string }) {
+  return (
+    <div>
+      {header ? (
+        <div className="mb-3 space-y-0.5 rounded-lg bg-surface-sunken px-3 py-2 text-[11px] leading-relaxed text-ink-soft">
+          {header.split(" / ").map((h, i) => (
+            <div key={i}>{h}</div>
+          ))}
+        </div>
+      ) : null}
+      <pre className="whitespace-pre-wrap rounded-lg border border-surface-border bg-white p-4 font-mono text-[12.5px] leading-6 text-gray-800">
+        {body}
+      </pre>
+    </div>
+  );
+}
+
+function ChatPreview({ header, body, channel }: { header?: string; body: string; channel: Order["channel"] }) {
+  const accent = channel === "teams" ? "bg-indigo-500" : "bg-violet-500";
+  return (
+    <div>
+      {header ? <div className="mb-2 text-[11px] font-medium text-ink-muted">{header}</div> : null}
+      <div className="flex gap-3">
+        <div className={`mt-0.5 h-8 w-8 flex-none rounded-full ${accent} text-center text-sm leading-8 text-white`}>
+          {channel === "teams" ? "T" : "S"}
+        </div>
+        <div className="rounded-2xl rounded-tl-sm bg-surface-sunken px-4 py-3 text-sm leading-relaxed text-ink whitespace-pre-wrap">
+          {body}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EdiPreview({ header, body }: { header?: string; body: string }) {
+  return (
+    <div>
+      {header ? <div className="mb-2 text-[11px] text-ink-muted">{header}</div> : null}
+      <pre className="overflow-x-auto rounded-lg border border-gray-700 bg-gray-900 p-4 font-mono text-[12px] leading-6 text-emerald-300">
+        {body}
+      </pre>
+    </div>
+  );
+}

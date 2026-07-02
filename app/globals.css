@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: #f8f7fc;
+  color: #161226;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ===== AI-native ユーティリティ ===== */
+
+/* エージェントの紫グラデーション (静止) */
+.ai-gradient {
+  background-image: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 55%, #4f46e5 100%);
+}
+
+/* 流れるグラデーション (AI稼働中のボタン等に) */
+.ai-gradient-anim {
+  background-image: linear-gradient(110deg, #7c3aed, #4f46e5, #8b5cf6, #7c3aed);
+  background-size: 220% 100%;
+  animation: sweep 2.6s linear infinite;
+}
+
+/* グラデーション文字 (数字のハイライト) */
+.gradient-text {
+  background-image: linear-gradient(120deg, #7c3aed 0%, #4f46e5 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* グラデーション枠線 (AIパネルの縁取り): 親に .ai-border → 内側に白背景を置く */
+.ai-border {
+  background-image: linear-gradient(135deg, rgba(139, 92, 246, 0.75), rgba(79, 70, 229, 0.55));
+  padding: 1px;
+}
+
+/* うっすらしたスケルトン (AI読み取り前のプレースホルダ) */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #efedf8;
+  border-radius: 4px;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.28), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* テーブル行のフェードイン (読み取り確定時) */
+.row-reveal {
+  animation: fade-in 0.4s ease-out;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* カスタムスクロールバー */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+  border: 2px solid #f6f7f9;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b6bcc6;
+}
