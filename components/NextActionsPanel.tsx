@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/store";
 import type { DemoOrder } from "@/lib/types";
 import { Button } from "./ui";
+import {
+  DEFAULT_APPROVER_NAME,
+  approvalDraftVariantCount,
+  buildApprovalDraftMessage,
+  orderItemSummary,
+} from "@/lib/core";
+import { yen } from "@/lib/format";
 
 /** 読み取り完了・例外なし案件の「次のアクション」4ボタンパネル (§3-3) */
 export function NextActionsPanel({ order }: { order: DemoOrder }) {
@@ -15,9 +22,39 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
 
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [note, setNote] = useState("");
+  const [variantIndex, setVariantIndex] = useState(0);
   const [invoiceCreated, setInvoiceCreated] = useState(false);
 
   const isWaitingApproval = order.status === "waiting_manager_approval";
+
+  function openApprovalForm() {
+    const draft = buildApprovalDraftMessage("order", {
+      approverName: DEFAULT_APPROVER_NAME,
+      customerName: order.customerName,
+      summary: orderItemSummary(order),
+      amountText: yen(order.totalAmount),
+    });
+    setNote(draft);
+    setVariantIndex(0);
+    setShowApprovalForm(true);
+  }
+
+  function regenerateDraft() {
+    const nextIndex = variantIndex + 1;
+    setVariantIndex(nextIndex);
+    setNote(
+      buildApprovalDraftMessage(
+        "order",
+        {
+          approverName: DEFAULT_APPROVER_NAME,
+          customerName: order.customerName,
+          summary: orderItemSummary(order),
+          amountText: yen(order.totalAmount),
+        },
+        nextIndex,
+      ),
+    );
+  }
 
   return (
     <div className="space-y-3 border-t border-surface-border pt-5">
@@ -62,7 +99,10 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
             🧾 請求書作成
           </Button>
 
-          <Button variant="secondary" onClick={() => setShowApprovalForm((v) => !v)}>
+          <Button
+            variant="secondary"
+            onClick={() => (showApprovalForm ? setShowApprovalForm(false) : openApprovalForm())}
+          >
             👤 上長に確認依頼
           </Button>
         </div>
@@ -76,13 +116,23 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
 
       {showApprovalForm && !isWaitingApproval && (
         <div className="space-y-2 rounded-lg border border-surface-border bg-surface-sunken p-4">
-          <label className="block text-xs font-semibold text-ink-muted">依頼コメント（任意）</label>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-ink-muted">AIが作成した依頼メッセージ（編集できます）</label>
+            {approvalDraftVariantCount("order") > 1 && (
+              <button
+                type="button"
+                onClick={regenerateDraft}
+                className="text-xs font-medium text-brand-600 hover:underline"
+              >
+                ✨ 文面を再生成
+              </button>
+            )}
+          </div>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            rows={2}
-            className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
-            placeholder="例）金額が大きいため念のため確認をお願いします"
+            rows={5}
+            className="w-full resize-y rounded-md border border-surface-border bg-white px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
           />
           <div className="flex gap-2">
             <Button

@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useOrderStore } from "@/lib/store";
-import { QUOTE_GENERATE_STEPS } from "@/lib/core";
+import {
+  QUOTE_GENERATE_STEPS,
+  DEFAULT_APPROVER_NAME,
+  approvalDraftVariantCount,
+  buildApprovalDraftMessage,
+} from "@/lib/core";
+import { yen } from "@/lib/format";
 import { Button, Card, LinkButton, SectionTitle } from "@/components/ui";
 import { AgentAvatar } from "@/components/badges";
 import { QuoteSheet } from "@/components/QuoteSheet";
@@ -22,6 +28,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
   const [generating, setGenerating] = useState(false);
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [note, setNote] = useState("");
+  const [variantIndex, setVariantIndex] = useState(0);
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -58,6 +65,31 @@ export default function QuotePage({ params }: { params: { id: string } }) {
   const isDraft = quote?.status === "draft";
   const isSent = quote?.status === "sent_mock";
   const isApprovalRequested = quote?.status === "approval_requested";
+
+  function draftMessage(idx: number): string {
+    return buildApprovalDraftMessage(
+      "quote",
+      {
+        approverName: DEFAULT_APPROVER_NAME,
+        customerName: order!.customerName,
+        summary: quote ? `見積 ${quote.quoteNo}` : "見積書",
+        amountText: yen(quote?.total ?? null),
+      },
+      idx,
+    );
+  }
+
+  function openApprovalForm() {
+    setNote(draftMessage(0));
+    setVariantIndex(0);
+    setShowApprovalForm(true);
+  }
+
+  function regenerateDraft() {
+    const nextIndex = variantIndex + 1;
+    setVariantIndex(nextIndex);
+    setNote(draftMessage(nextIndex));
+  }
 
   return (
     <div className="space-y-6">
@@ -131,7 +163,11 @@ export default function QuotePage({ params }: { params: { id: string } }) {
                   <Button variant="primary" className="w-full" onClick={() => sendQuote(order.id)}>
                     📤 先方に送付
                   </Button>
-                  <Button variant="secondary" className="w-full" onClick={() => setShowApprovalForm((v) => !v)}>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => (showApprovalForm ? setShowApprovalForm(false) : openApprovalForm())}
+                  >
                     👤 上長に確認依頼
                   </Button>
                 </div>
@@ -139,12 +175,23 @@ export default function QuotePage({ params }: { params: { id: string } }) {
 
               {showApprovalForm && isDraft && (
                 <div className="mt-3 space-y-2 rounded-lg border border-surface-border bg-surface-sunken p-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-ink-muted">AIが作成した依頼メッセージ</label>
+                    {approvalDraftVariantCount("quote") > 1 && (
+                      <button
+                        type="button"
+                        onClick={regenerateDraft}
+                        className="text-xs font-medium text-brand-600 hover:underline"
+                      >
+                        ✨ 再生成
+                      </button>
+                    )}
+                  </div>
                   <textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    rows={2}
-                    placeholder="依頼コメント（任意）"
-                    className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                    rows={5}
+                    className="w-full resize-y rounded-md border border-surface-border bg-white px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                   />
                   <div className="flex gap-2">
                     <Button

@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { SAMPLE_ORDERS } from "./data";
 import { INITIAL_ALERTS, DRIP_QUEUE } from "./data-alerts";
-import { buildCoreSystemInput, makeOrderNo, makeQuoteNo } from "./core";
+import { buildCoreSystemInput, makeOrderNo, makeQuoteNo, DEFAULT_APPROVER_NAME } from "./core";
 import { addBusinessDays, businessDaysBetween } from "./business-days";
 import type {
   ApprovalRequest,
@@ -551,7 +551,7 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
     const approval: ApprovalRequest = {
       id: `APR-${orderId}`,
       target,
-      approverName: "山田部長",
+      approverName: DEFAULT_APPROVER_NAME,
       requestedOnDemoDate: get().demoDate,
       requesterNote: note ?? "",
       status: "waiting",

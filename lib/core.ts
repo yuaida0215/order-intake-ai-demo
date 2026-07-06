@@ -1,4 +1,4 @@
-import type { CoreSystemInput, Order } from "./types";
+import type { ApprovalTarget, CoreSystemInput, Order } from "./types";
 
 // 取引先コードのモックマスタ (§6.3 取引先コード表示用)
 export const CUSTOMER_CODE: Record<string, string> = {
@@ -53,6 +53,53 @@ export const QUOTE_GENERATE_STEPS: string[] = [
   "納期・支払条件を設定しています…",
   "見積書を組み立てています…",
 ];
+
+// ------------------------------------------------------------
+// 上長への確認依頼メッセージ (AIドラフト)
+//   顧客への確認依頼(カテゴリC・§9)と同様に、上長への確認依頼も
+//   必ずAIが文面を自動生成し、人が送信前に編集できるようにする。
+// ------------------------------------------------------------
+
+/** デモ上の承認者名 (store.ts の requestApproval と揃える) */
+export const DEFAULT_APPROVER_NAME = "山田部長";
+
+export type ApprovalDraftContext = {
+  approverName: string;
+  customerName: string | null;
+  summary: string;
+  amountText: string;
+};
+
+const APPROVAL_DRAFT_BUILDERS: Record<ApprovalTarget, (ctx: ApprovalDraftContext) => string[]> = {
+  order: (ctx) => [
+    `${ctx.approverName}\n\nお疲れ様です。${ctx.customerName ?? "取引先"}様より受注した案件（${ctx.summary}）について、基幹システムへの登録前にご確認をお願いいたします。\n金額：${ctx.amountText}`,
+    `${ctx.approverName}\n\n${ctx.customerName ?? "取引先"}様の受注内容（${ctx.summary} / ${ctx.amountText}）をご確認いただけますでしょうか。問題なければそのまま登録を進めます。`,
+  ],
+  quote: (ctx) => [
+    `${ctx.approverName}\n\nお疲れ様です。${ctx.customerName ?? "取引先"}様宛の見積書（${ctx.summary} / ${ctx.amountText}）を作成しました。送付前にご確認をお願いいたします。`,
+    `${ctx.approverName}\n\n${ctx.customerName ?? "取引先"}様への見積内容（${ctx.amountText}）について、ご確認・ご承認をお願いします。`,
+  ],
+  po: (ctx) => [
+    `${ctx.approverName}\n\nお疲れ様です。${ctx.customerName ?? "取引先"}様より発注書を受領しました（${ctx.summary} / ${ctx.amountText}）。基幹システムへの転記前にご確認をお願いいたします。`,
+  ],
+};
+
+export function approvalDraftVariantCount(target: ApprovalTarget): number {
+  return APPROVAL_DRAFT_BUILDERS[target]({ approverName: "", customerName: null, summary: "", amountText: "" }).length;
+}
+
+/** 上長への確認依頼メッセージをAIドラフトとして生成する (variantIndexで文面のバリエーションを切替) */
+export function buildApprovalDraftMessage(target: ApprovalTarget, ctx: ApprovalDraftContext, variantIndex = 0): string {
+  const variants = APPROVAL_DRAFT_BUILDERS[target](ctx);
+  return variants[variantIndex % variants.length];
+}
+
+/** Order から確認依頼メッセージ用の商品サマリを組み立てる */
+export function orderItemSummary(order: Order): string {
+  const first = order.items[0];
+  if (!first?.productName) return "受注内容";
+  return order.items.length > 1 ? `${first.productName} 他${order.items.length - 1}点` : first.productName;
+}
 
 // AI読み取り演出のステップ文言 (§1.2 / SCR-002)
 export const AI_READING_STEPS: string[] = [
