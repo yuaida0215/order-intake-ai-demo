@@ -15,11 +15,12 @@ export type TaskItem = {
   waitingDays?: number;
 };
 
-const APPROVAL_TARGET_LABEL: Record<string, string> = { quote: "見積書", order: "受注内容", po: "発注書" };
+const APPROVAL_TARGET_LABEL: Record<string, string> = { quote: "見積書", order: "受注内容", po: "発注書", invoice: "請求書" };
 
 function approvalHref(order: DemoOrder): string {
   if (order.approval?.target === "quote") return `/orders/${order.id}/quote`;
   if (order.approval?.target === "po") return `/orders/${order.id}/po`;
+  if (order.approval?.target === "invoice") return `/orders/${order.id}/invoice`;
   return `/orders/${order.id}/read`;
 }
 

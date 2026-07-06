@@ -1,4 +1,4 @@
-import type { ApprovalTarget, CoreSystemInput, Order } from "./types";
+import type { ApprovalTarget, CoreSystemInput, Invoice, Order, Quote } from "./types";
 
 // 取引先コードのモックマスタ (§6.3 取引先コード表示用)
 export const CUSTOMER_CODE: Record<string, string> = {
@@ -46,12 +46,25 @@ export function makeQuoteNo(seq: number): string {
   return `Q-2026-${String(seq).padStart(4, "0")}`;
 }
 
+/** 請求書番号を採番 */
+export function makeInvoiceNo(seq: number): string {
+  return String(seq);
+}
+
 // 見積書自動生成演出のステップ文言
 export const QUOTE_GENERATE_STEPS: string[] = [
   "受注内容を確認しています…",
   "見積項目を計算しています…",
-  "納期・支払条件を設定しています…",
+  "消費税・合計金額を計算しています…",
   "見積書を組み立てています…",
+];
+
+// 請求書自動生成演出のステップ文言
+export const INVOICE_GENERATE_STEPS: string[] = [
+  "受注内容を確認しています…",
+  "請求項目を計算しています…",
+  "消費税・振込先情報を設定しています…",
+  "請求書を組み立てています…",
 ];
 
 // ------------------------------------------------------------
@@ -82,6 +95,10 @@ const APPROVAL_DRAFT_BUILDERS: Record<ApprovalTarget, (ctx: ApprovalDraftContext
   po: (ctx) => [
     `${ctx.approverName}\n\nお疲れ様です。${ctx.customerName ?? "取引先"}様より発注書を受領しました（${ctx.summary} / ${ctx.amountText}）。基幹システムへの転記前にご確認をお願いいたします。`,
   ],
+  invoice: (ctx) => [
+    `${ctx.approverName}\n\nお疲れ様です。${ctx.customerName ?? "取引先"}様宛の請求書（${ctx.summary} / ${ctx.amountText}）を作成しました。送付前にご確認をお願いいたします。`,
+    `${ctx.approverName}\n\n${ctx.customerName ?? "取引先"}様への請求内容（${ctx.amountText}）について、ご確認・ご承認をお願いします。`,
+  ],
 };
 
 export function approvalDraftVariantCount(target: ApprovalTarget): number {
@@ -99,6 +116,66 @@ export function orderItemSummary(order: Order): string {
   const first = order.items[0];
   if (!first?.productName) return "受注内容";
   return order.items.length > 1 ? `${first.productName} 他${order.items.length - 1}点` : first.productName;
+}
+
+// ------------------------------------------------------------
+// 見積書・請求書の不足項目検知 + 顧客への確認依頼メッセージ (AIドラフト)
+// ------------------------------------------------------------
+
+export function detectQuoteMissingFields(quote: Quote): string[] {
+  const missing: string[] = [];
+  if (!quote.customerName) missing.push("取引先名");
+  quote.items.forEach((it, i) => {
+    const label = quote.items.length > 1 ? `(${i + 1}行目)` : "";
+    if (!it.productName) missing.push(`品目${label}`);
+    if (it.quantity === null) missing.push(`数量${label}`);
+    if (it.unitPrice === null) missing.push(`単価${label}`);
+  });
+  return missing;
+}
+
+export function detectInvoiceMissingFields(invoice: Invoice): string[] {
+  const missing: string[] = [];
+  if (!invoice.customerName) missing.push("取引先名");
+  invoice.items.forEach((it, i) => {
+    const label = invoice.items.length > 1 ? `(${i + 1}行目)` : "";
+    if (!it.description) missing.push(`品目${label}`);
+    if (it.quantity === null) missing.push(`数量${label}`);
+    if (it.unitPrice === null) missing.push(`単価${label}`);
+    if (!it.deliveryDate) missing.push(`納品日${label}`);
+  });
+  return missing;
+}
+
+export type CustomerInquiryContext = {
+  customerName: string | null;
+  customerContactName: string | null;
+  documentLabel: "見積書" | "請求書";
+  missingFields: string[];
+};
+
+/** 敬称が既に付いている場合は重複させない ("佐藤様" → "佐藤様" のまま) */
+function withHonorific(name: string): string {
+  return name.endsWith("様") ? name : `${name}様`;
+}
+
+const CUSTOMER_INQUIRY_VARIANTS = (ctx: CustomerInquiryContext): string[] => {
+  const to = `${ctx.customerName ?? "お客様"}\n${ctx.customerContactName ? withHonorific(ctx.customerContactName) : "ご担当者様"}`;
+  const fieldList = ctx.missingFields.map((f) => `・${f}`).join("\n");
+  return [
+    `${to}\n\nいつもお世話になっております。\n${ctx.documentLabel}の作成にあたり、以下の項目についてご確認させてください。\n${fieldList}\n\nお手数をおかけいたしますが、ご確認のほどよろしくお願いいたします。`,
+    `${to}\n\nお世話になっております。\n${ctx.documentLabel}のご準備を進めておりますが、下記の点が未確定のためご教示いただけますでしょうか。\n${fieldList}\n\n何卒よろしくお願いいたします。`,
+  ];
+};
+
+export function customerInquiryDraftVariantCount(): number {
+  return 2;
+}
+
+/** 見積書・請求書の不足項目について、AIが顧客への確認依頼メッセージをドラフトする */
+export function buildCustomerInquiryDraft(ctx: CustomerInquiryContext, variantIndex = 0): string {
+  const variants = CUSTOMER_INQUIRY_VARIANTS(ctx);
+  return variants[variantIndex % variants.length];
 }
 
 // AI読み取り演出のステップ文言 (§1.2 / SCR-002)

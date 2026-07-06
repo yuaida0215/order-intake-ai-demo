@@ -4,26 +4,26 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useOrderStore } from "@/lib/store";
 import {
-  QUOTE_GENERATE_STEPS,
+  INVOICE_GENERATE_STEPS,
   DEFAULT_APPROVER_NAME,
   approvalDraftVariantCount,
   buildApprovalDraftMessage,
-  detectQuoteMissingFields,
+  detectInvoiceMissingFields,
 } from "@/lib/core";
 import { yen } from "@/lib/format";
 import { Button, Card, LinkButton, SectionTitle } from "@/components/ui";
 import { AgentAvatar } from "@/components/badges";
-import { QuoteSheet } from "@/components/QuoteSheet";
+import { InvoiceSheet } from "@/components/InvoiceSheet";
 import { MissingFieldsPanel } from "@/components/MissingFieldsPanel";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export default function QuotePage({ params }: { params: { id: string } }) {
+export default function InvoicePage({ params }: { params: { id: string } }) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === params.id));
-  const generateQuote = useOrderStore((s) => s.generateQuote);
-  const updateQuoteField = useOrderStore((s) => s.updateQuoteField);
-  const updateQuoteItem = useOrderStore((s) => s.updateQuoteItem);
-  const sendQuote = useOrderStore((s) => s.sendQuote);
+  const generateInvoice = useOrderStore((s) => s.generateInvoice);
+  const updateInvoiceField = useOrderStore((s) => s.updateInvoiceField);
+  const updateInvoiceItem = useOrderStore((s) => s.updateInvoiceItem);
+  const sendInvoice = useOrderStore((s) => s.sendInvoice);
   const requestApproval = useOrderStore((s) => s.requestApproval);
   const addLog = useOrderStore((s) => s.addLog);
 
@@ -35,19 +35,19 @@ export default function QuotePage({ params }: { params: { id: string } }) {
   const startedRef = useRef(false);
 
   useEffect(() => {
-    if (startedRef.current || !order || order.quote) return;
+    if (startedRef.current || !order || order.invoice) return;
     startedRef.current = true;
     (async () => {
       setGenerating(true);
-      for (let i = 0; i < QUOTE_GENERATE_STEPS.length; i++) {
+      for (let i = 0; i < INVOICE_GENERATE_STEPS.length; i++) {
         setStepIndex(i);
         await sleep(550);
       }
-      setStepIndex(QUOTE_GENERATE_STEPS.length);
-      generateQuote(order.id);
+      setStepIndex(INVOICE_GENERATE_STEPS.length);
+      generateInvoice(order.id);
       setGenerating(false);
     })();
-  }, [order, generateQuote]);
+  }, [order, generateInvoice]);
 
   if (!order) {
     return (
@@ -64,20 +64,20 @@ export default function QuotePage({ params }: { params: { id: string } }) {
     );
   }
 
-  const quote = order.quote;
-  const isDraft = quote?.status === "draft";
-  const isSent = quote?.status === "sent_mock";
-  const isApprovalRequested = quote?.status === "approval_requested";
-  const missingFields = quote ? detectQuoteMissingFields(quote) : [];
+  const invoice = order.invoice;
+  const isDraft = invoice?.status === "draft";
+  const isSent = invoice?.status === "sent_mock";
+  const isApprovalRequested = invoice?.status === "approval_requested";
+  const missingFields = invoice ? detectInvoiceMissingFields(invoice) : [];
 
   function draftMessage(idx: number): string {
     return buildApprovalDraftMessage(
-      "quote",
+      "invoice",
       {
         approverName: DEFAULT_APPROVER_NAME,
         customerName: order!.customerName,
-        summary: quote ? `見積 ${quote.quoteNo}` : "見積書",
-        amountText: yen(quote?.total ?? null),
+        summary: invoice ? `請求書 ${invoice.invoiceNo}` : "請求書",
+        amountText: yen(invoice?.total ?? null),
       },
       idx,
     );
@@ -101,20 +101,20 @@ export default function QuotePage({ params }: { params: { id: string } }) {
         <Link href={`/orders/${order.id}/read`} className="text-sm text-ink-muted hover:text-ink">
           ← 読み取り結果に戻る
         </Link>
-        <h1 className="mt-2 text-xl font-bold text-ink">見積書作成</h1>
+        <h1 className="mt-2 text-xl font-bold text-ink">請求書作成</h1>
         <p className="mt-1 text-sm text-ink-muted">
-          AIが受注内容から見積書を自動生成します。内容は送付前に編集できます。
+          AIが受注内容から請求書を自動生成します。内容は送付前に編集できます。
           <span className="ml-1 font-mono text-ink-faint">{order.id}</span>
         </p>
       </div>
 
-      {!quote ? (
+      {!invoice ? (
         <Card>
           <div className="flex flex-col items-center gap-5 py-10 text-center">
             <AgentAvatar size="h-12 w-12" pulse className="text-xl" />
-            <p className="text-sm text-ink-muted">AI Agentが見積書を生成しています…</p>
+            <p className="text-sm text-ink-muted">AI Agentが請求書を生成しています…</p>
             <ol className="space-y-2 text-left">
-              {QUOTE_GENERATE_STEPS.map((label, i) => {
+              {INVOICE_GENERATE_STEPS.map((label, i) => {
                 const done = i < stepIndex;
                 const active = generating && i === stepIndex;
                 return (
@@ -139,29 +139,29 @@ export default function QuotePage({ params }: { params: { id: string } }) {
             {isDraft && (
               <MissingFieldsPanel
                 missingFields={missingFields}
-                documentLabel="見積書"
-                customerName={quote.customerName}
+                documentLabel="請求書"
+                customerName={invoice.customerName}
                 customerContactName={order.customerContactName}
                 onSendInquiry={(message) =>
-                  addLog(order.id, "internal_user", "customer_inquiry", `見積書の不足項目について顧客へ確認を依頼しました: ${message.slice(0, 40)}…`)
+                  addLog(order.id, "internal_user", "customer_inquiry", `請求書の不足項目について顧客へ確認を依頼しました: ${message.slice(0, 40)}…`)
                 }
               />
             )}
-            <QuoteSheet
-              quote={quote}
+            <InvoiceSheet
+              invoice={invoice}
               editable={isDraft}
-              onUpdateField={(patch) => updateQuoteField(order.id, patch)}
-              onUpdateItem={(lineNo, patch) => updateQuoteItem(order.id, lineNo, patch)}
+              onUpdateField={(patch) => updateInvoiceField(order.id, patch)}
+              onUpdateItem={(lineNo, patch) => updateInvoiceItem(order.id, lineNo, patch)}
             />
           </div>
 
           <div className="space-y-4">
             <Card>
-              <SectionTitle sub="見積書のステータスと操作">操作パネル</SectionTitle>
+              <SectionTitle sub="請求書のステータスと操作">操作パネル</SectionTitle>
 
               {isSent && (
                 <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
-                  ✓ 先方に送付済みです（{quote.sentAt}・モック）
+                  ✓ 先方に送付済みです（{invoice.sentAt}・モック）
                 </div>
               )}
               {isApprovalRequested && (
@@ -175,7 +175,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
 
               {isDraft && (
                 <div className="mt-3 space-y-2">
-                  <Button variant="primary" className="w-full" onClick={() => sendQuote(order.id)}>
+                  <Button variant="primary" className="w-full" onClick={() => sendInvoice(order.id)}>
                     📤 先方に送付
                   </Button>
                   <Button
@@ -192,7 +192,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
                 <div className="mt-3 space-y-2 rounded-lg border border-surface-border bg-surface-sunken p-3">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-semibold text-ink-muted">AIが作成した依頼メッセージ</label>
-                    {approvalDraftVariantCount("quote") > 1 && (
+                    {approvalDraftVariantCount("invoice") > 1 && (
                       <button
                         type="button"
                         onClick={regenerateDraft}
@@ -213,7 +213,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
                       size="sm"
                       variant="primary"
                       onClick={() => {
-                        requestApproval(order.id, "quote", note);
+                        requestApproval(order.id, "invoice", note);
                         setShowApprovalForm(false);
                       }}
                     >

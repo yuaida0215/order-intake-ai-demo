@@ -3,12 +3,14 @@
 import { create } from "zustand";
 import { SAMPLE_ORDERS } from "./data";
 import { INITIAL_ALERTS, DRIP_QUEUE } from "./data-alerts";
-import { buildCoreSystemInput, makeOrderNo, makeQuoteNo, DEFAULT_APPROVER_NAME } from "./core";
+import { buildCoreSystemInput, makeOrderNo, makeQuoteNo, makeInvoiceNo, DEFAULT_APPROVER_NAME } from "./core";
 import { addBusinessDays, businessDaysBetween } from "./business-days";
 import type {
   ApprovalRequest,
   ApprovalTarget,
   DemoOrder,
+  Invoice,
+  InvoiceLineItem,
   MissingField,
   Order,
   OrderAlert,
@@ -18,6 +20,14 @@ import type {
   ReminderChannel,
   ReminderSettings,
 } from "./types";
+
+function lastDayOfMonth(iso: string): string {
+  const [y, m] = iso.split("-").map(Number);
+  const last = new Date(y, m, 0); // 翌月の0日目 = 当月末日
+  const mm = String(last.getMonth() + 1).padStart(2, "0");
+  const dd = String(last.getDate()).padStart(2, "0");
+  return `${last.getFullYear()}-${mm}-${dd}`;
+}
 
 // ------------------------------------------------------------
 // デモ用ストア (すべてクライアント側モック。実API連携なし §1.2)
@@ -62,6 +72,7 @@ type State = {
   orders: DemoOrder[];
   orderSeq: number;
   quoteSeq: number;
+  invoiceSeq: number;
   alerts: OrderAlert[];
   watchQueue: OrderAlert[];
   watchEnabled: boolean;
@@ -114,7 +125,10 @@ type Actions = {
   sendQuote: (orderId: string) => void;
 
   // ---- 請求書 (モック) ----
-  createInvoiceMock: (orderId: string) => void;
+  generateInvoice: (orderId: string) => void;
+  updateInvoiceField: (orderId: string, patch: Partial<Invoice>) => void;
+  updateInvoiceItem: (orderId: string, lineNo: number, patch: Partial<InvoiceLineItem>) => void;
+  sendInvoice: (orderId: string) => void;
 
   // ---- 上長承認 ----
   requestApproval: (orderId: string, target: ApprovalTarget, note?: string) => void;
@@ -289,6 +303,7 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
   orders: cloneInitial(),
   orderSeq: 1,
   quoteSeq: 1,
+  invoiceSeq: 100,
   alerts: INITIAL_ALERTS.map((a) => ({ ...a })),
   watchQueue: DRIP_QUEUE.map((a) => ({ ...a })),
   watchEnabled: false,
@@ -402,6 +417,7 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
       orders: cloneInitial(),
       orderSeq: 1,
       quoteSeq: 1,
+      invoiceSeq: 100,
       alerts: INITIAL_ALERTS.map((a) => ({ ...a })),
       watchQueue: DRIP_QUEUE.map((a) => ({ ...a })),
       watchEnabled: false,
@@ -493,9 +509,7 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
       subtotal: order.subtotalAmount,
       tax: order.taxAmount,
       total: order.totalAmount,
-      deliveryTerms: order.requestedDeliveryDate ? `${order.requestedDeliveryDate} 希望` : "別途相談",
-      paymentTerms: "月末締め翌月末払い",
-      notes: "本見積の有効期限は発行日より20営業日です。",
+      notes: "",
       status: "draft",
       sentAt: null,
     };
@@ -535,11 +549,68 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
     }),
 
   // ------------------------------------------------------------
-  // 請求書 (モック・ログのみ)
+  // 請求書
   // ------------------------------------------------------------
 
-  createInvoiceMock: (orderId) =>
-    get().addLog(orderId, "ai", "invoice_create", "請求書を作成しました (モック)"),
+  generateInvoice: (orderId) => {
+    const order = get().getOrder(orderId);
+    if (!order) return;
+    const seq = get().invoiceSeq;
+    const invoiceNo = makeInvoiceNo(seq);
+    const items: InvoiceLineItem[] = order.items.map((it) => ({
+      lineNo: it.lineNo,
+      deliveryDate: order.requestedDeliveryDate,
+      description: it.productName,
+      unitPrice: it.unitPrice,
+      quantity: it.quantity,
+      unit: it.unit,
+      amount: it.amount,
+    }));
+    const invoice: Invoice = {
+      invoiceNo,
+      issuedAt: get().demoDate,
+      dueDate: lastDayOfMonth(get().demoDate),
+      customerName: order.customerName,
+      items,
+      subtotal: order.subtotalAmount,
+      tax: order.taxAmount,
+      total: order.totalAmount,
+      notes: "",
+      status: "draft",
+      sentAt: null,
+    };
+    get().patch(orderId, (o) => {
+      o.invoice = invoice;
+      o.logs = [...(o.logs ?? []), { timestamp: nowLabel(), actor: "ai", action: "invoice_generate", message: `請求書 ${invoiceNo} を自動生成しました` }];
+    });
+    set((s) => ({ invoiceSeq: s.invoiceSeq + 1 }));
+  },
+
+  updateInvoiceField: (orderId, patch) =>
+    get().patch(orderId, (o) => {
+      if (!o.invoice) return;
+      Object.assign(o.invoice, patch);
+    }),
+
+  updateInvoiceItem: (orderId, lineNo, patch) =>
+    get().patch(orderId, (o) => {
+      if (!o.invoice) return;
+      o.invoice.items = o.invoice.items.map((it) => (it.lineNo === lineNo ? { ...it, ...patch } : it));
+      const amounts = o.invoice.items.map((i) => i.amount);
+      const subtotal = amounts.every((a): a is number => a !== null) ? amounts.reduce((a, b) => a + b, 0) : null;
+      const tax = subtotal !== null ? Math.round(subtotal * 0.1) : null;
+      o.invoice.subtotal = subtotal;
+      o.invoice.tax = tax;
+      o.invoice.total = subtotal !== null && tax !== null ? subtotal + tax : null;
+    }),
+
+  sendInvoice: (orderId) =>
+    get().patch(orderId, (o) => {
+      if (!o.invoice) return;
+      o.invoice.status = "sent_mock";
+      o.invoice.sentAt = get().demoDate;
+      o.logs = [...(o.logs ?? []), { timestamp: nowLabel(), actor: "internal_user", action: "invoice_send", message: `請求書 ${o.invoice.invoiceNo} を先方へ送付しました (モック)` }];
+    }),
 
   // ------------------------------------------------------------
   // 上長承認・リマインド
@@ -564,6 +635,7 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
       o.approval = approval;
       o.status = "waiting_manager_approval";
       if (target === "quote" && o.quote) o.quote.status = "approval_requested";
+      if (target === "invoice" && o.invoice) o.invoice.status = "approval_requested";
       o.logs = [
         ...(o.logs ?? []),
         { timestamp: nowLabel(), actor: "internal_user", action: "approval_request", message: `${approval.approverName}に確認依頼を送信しました` },
@@ -578,6 +650,7 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
       o.approval.decisionComment = comment ?? null;
       o.status = o.approval.returnStatus;
       if (o.approval.target === "quote" && o.quote) o.quote.status = "draft";
+      if (o.approval.target === "invoice" && o.invoice) o.invoice.status = "draft";
       o.logs = [
         ...(o.logs ?? []),
         { timestamp: nowLabel(), actor: "manager", action: "approve", message: `${o.approval.approverName}が承認しました${comment ? `（コメント: ${comment}）` : ""}` },

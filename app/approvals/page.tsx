@@ -8,7 +8,7 @@ import { DemoClockControl } from "@/components/DemoClockControl";
 import { businessDaysBetween } from "@/lib/business-days";
 import type { DemoOrder, ReminderChannel } from "@/lib/types";
 
-const TARGET_LABEL: Record<string, string> = { quote: "見積書", order: "受注内容", po: "発注書" };
+const TARGET_LABEL: Record<string, string> = { quote: "見積書", order: "受注内容", po: "発注書", invoice: "請求書" };
 const CHANNEL_OPTIONS: [ReminderChannel, string][] = [
   ["chatwork", "Chatwork"],
   ["slack", "Slack"],
@@ -50,6 +50,7 @@ export default function ApprovalsPage() {
   function detailHref(order: DemoOrder): string {
     if (order.approval?.target === "quote") return `/orders/${order.id}/quote`;
     if (order.approval?.target === "po") return `/orders/${order.id}/po`;
+    if (order.approval?.target === "invoice") return `/orders/${order.id}/invoice`;
     return `/orders/${order.id}/read`;
   }
 

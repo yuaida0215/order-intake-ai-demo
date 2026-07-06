@@ -17,13 +17,11 @@ import { yen } from "@/lib/format";
 /** 読み取り完了・例外なし案件の「次のアクション」4ボタンパネル (§3-3) */
 export function NextActionsPanel({ order }: { order: DemoOrder }) {
   const router = useRouter();
-  const createInvoiceMock = useOrderStore((s) => s.createInvoiceMock);
   const requestApproval = useOrderStore((s) => s.requestApproval);
 
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [note, setNote] = useState("");
   const [variantIndex, setVariantIndex] = useState(0);
-  const [invoiceCreated, setInvoiceCreated] = useState(false);
 
   const isWaitingApproval = order.status === "waiting_manager_approval";
 
@@ -89,15 +87,15 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
             </Button>
           )}
 
-          <Button
-            variant="secondary"
-            onClick={() => {
-              createInvoiceMock(order.id);
-              setInvoiceCreated(true);
-            }}
-          >
-            🧾 請求書作成
-          </Button>
+          {order.invoice ? (
+            <Button variant="primary" onClick={() => router.push(`/orders/${order.id}/invoice`)}>
+              🧾 請求書を見る（{order.invoice.invoiceNo}）
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={() => router.push(`/orders/${order.id}/invoice`)}>
+              🧾 請求書作成
+            </Button>
+          )}
 
           <Button
             variant="secondary"
@@ -105,12 +103,6 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
           >
             👤 上長に確認依頼
           </Button>
-        </div>
-      )}
-
-      {invoiceCreated && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-          請求書を作成しました（モック）。対応履歴に記録されています。
         </div>
       )}
 

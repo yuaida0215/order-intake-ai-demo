@@ -124,6 +124,8 @@ export type Order = {
   alertId?: string;
   /** 見積書 (見積書作成ボタンで生成) */
   quote?: Quote;
+  /** 請求書 (請求書作成ボタンで生成) */
+  invoice?: Invoice;
   /** 上長への確認依頼 (上長に確認依頼ボタンで生成) */
   approval?: ApprovalRequest;
   /** 発注書 (発注書受領アラート経由の案件のみ) */
@@ -207,14 +209,37 @@ export type Quote = {
   subtotal: number | null;
   tax: number | null;
   total: number | null;
-  deliveryTerms: string;
-  paymentTerms: string;
   notes: string;
   status: "generating" | "draft" | "sent_mock" | "approval_requested";
   sentAt: string | null;
 };
 
-export type ApprovalTarget = "quote" | "order" | "po";
+export type InvoiceLineItem = {
+  lineNo: number;
+  deliveryDate: string | null;
+  /** 品目・納品書番号 */
+  description: string | null;
+  unitPrice: number | null;
+  quantity: number | null;
+  unit: string | null;
+  amount: number | null;
+};
+
+export type Invoice = {
+  invoiceNo: string;
+  issuedAt: string;
+  dueDate: string;
+  customerName: string | null;
+  items: InvoiceLineItem[];
+  subtotal: number | null;
+  tax: number | null;
+  total: number | null;
+  notes: string;
+  status: "generating" | "draft" | "sent_mock" | "approval_requested";
+  sentAt: string | null;
+};
+
+export type ApprovalTarget = "quote" | "order" | "po" | "invoice";
 
 export type ApprovalRequest = {
   id: string;
