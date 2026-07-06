@@ -17,6 +17,7 @@ import type { AssigneeType, DemoOrder, OrderChannel, OrderStatus } from "@/lib/t
 import { AgentAvatar, AssigneeBadge, CategoryBadge, ChannelBadge, StatusBadge } from "@/components/badges";
 import { KpiCard } from "@/components/Kpi";
 import { Button, Card } from "@/components/ui";
+import { toDemoOrders } from "@/lib/ingest";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -25,11 +26,14 @@ export default function OrdersPage() {
   const orders = useOrderStore((s) => s.orders);
   const markReading = useOrderStore((s) => s.markReading);
   const revealOrder = useOrderStore((s) => s.revealOrder);
+  const addOrders = useOrderStore((s) => s.addOrders);
 
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [channelFilter, setChannelFilter] = useState<OrderChannel | "all">("all");
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeType | "all">("all");
   const [bulkRunning, setBulkRunning] = useState(false);
+  const [importing, setImporting] = useState<string | null>(null); // 取り込み中のチャネル名
+  const [importNote, setImportNote] = useState<string | null>(null);
 
   const unreadCount = orders.filter((o) => !o.isRead).length;
 
@@ -72,6 +76,31 @@ export default function OrdersPage() {
     setBulkRunning(false);
   }
 
+  async function importFrom(endpoint: string, label: string) {
+    setImporting(label);
+    setImportNote(null);
+    try {
+      const res = await fetch(`/api/ingest/${endpoint}`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportNote(`${label}取り込みエラー: ${data.error ?? res.status}`);
+        return;
+      }
+      const added = addOrders(toDemoOrders(data.orders));
+      setImportNote(
+        added > 0
+          ? `${label}から${added}件の受注を取り込みました。「AIで一括読み取り」で分類できます。`
+          : (data.orders?.length ?? 0) > 0
+            ? `${label}に新着はありません（すべて取り込み済みです）。`
+            : `${label}に受注らしいメッセージは見つかりませんでした。`
+      );
+    } catch (e) {
+      setImportNote(`${label}取り込みエラー: サーバーに接続できませんでした。`);
+    } finally {
+      setImporting(null);
+    }
+  }
+
   const statusOptions = Array.from(new Set(orders.map((o) => o.status)));
 
   return (
@@ -84,15 +113,29 @@ export default function OrdersPage() {
             すべてのチャネルから届いた受注を、AIが読み取り・分類します。
           </p>
         </div>
-        <Button variant="primary" className="ai-gradient-anim shadow-glow" onClick={runBulkRead} disabled={bulkRunning || unreadCount === 0}>
-          {bulkRunning ? (
-            <>
-              <Spinner /> AIが読み取り中…
-            </>
-          ) : (
-            <>🤖 AIで一括読み取り{unreadCount > 0 ? `（${unreadCount}件）` : ""}</>
-          )}
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-1.5 rounded-xl border border-surface-border bg-white p-1">
+            <span className="pl-2 text-[11px] font-medium text-ink-muted">取り込み:</span>
+            <Button size="sm" variant="ghost" onClick={() => importFrom("chatwork", "Chatwork")} disabled={importing !== null}>
+              {importing === "Chatwork" ? "確認中…" : "🗨️ Chatwork"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => importFrom("slack", "Slack")} disabled={importing !== null}>
+              {importing === "Slack" ? "確認中…" : "💬 Slack"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => importFrom("gmail", "メール")} disabled={importing !== null}>
+              {importing === "メール" ? "確認中…" : "✉️ メール"}
+            </Button>
+          </div>
+          <Button variant="primary" className="ai-gradient-anim shadow-glow" onClick={runBulkRead} disabled={bulkRunning || unreadCount === 0}>
+            {bulkRunning ? (
+              <>
+                <Spinner /> AIが読み取り中…
+              </>
+            ) : (
+              <>🤖 AIで一括読み取り{unreadCount > 0 ? `（${unreadCount}件）` : ""}</>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* KPIカード */}
@@ -103,6 +146,13 @@ export default function OrdersPage() {
         <KpiCard label="相手先確認待ち" value={kpi.customerWait} tone="red" icon="📨" />
         <KpiCard label="受注金額（読取済）" value={<span className="gradient-text">{yen(kpi.monthlyAmount)}</span>} tone="default" icon="💴" />
       </div>
+
+      {/* Chatwork取り込み結果 */}
+      {importNote && (
+        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm text-teal-800">
+          {importNote}
+        </div>
+      )}
 
       {/* 未読案内バナー */}
       {unreadCount > 0 && !bulkRunning ? (

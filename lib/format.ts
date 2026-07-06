@@ -57,6 +57,7 @@ export const CHANNEL_LABEL: Record<OrderChannel, string> = {
   slack: "Slack",
   teams: "Teams",
   edi: "EDI",
+  chatwork: "Chatwork",
 };
 
 /** チャネルアイコン (絵文字で軽量に) */
@@ -67,6 +68,7 @@ export const CHANNEL_ICON: Record<OrderChannel, string> = {
   slack: "💬",
   teams: "👥",
   edi: "🔗",
+  chatwork: "🗨️",
 };
 
 // ------------------------------------------------------------

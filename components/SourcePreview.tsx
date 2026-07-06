@@ -21,7 +21,7 @@ export function SourcePreview({ order }: { order: Order }) {
         ) : p?.kind === "email" ? (
           <EmailPreview header={p.header} body={p.body ?? ""} />
         ) : p?.kind === "chat" ? (
-          <ChatPreview header={p.header} body={p.body ?? ""} channel={order.channel} />
+          <ChatPreview header={p.header} body={p.body ?? ""} channel={order.channel} imageDataUrl={p.imageDataUrl} />
         ) : p?.kind === "edi" ? (
           <EdiPreview header={p.header} body={p.body ?? ""} />
         ) : (
@@ -76,17 +76,38 @@ function EmailPreview({ header, body }: { header?: string; body: string }) {
   );
 }
 
-function ChatPreview({ header, body, channel }: { header?: string; body: string; channel: Order["channel"] }) {
-  const accent = channel === "teams" ? "bg-indigo-500" : "bg-violet-500";
+function ChatPreview({
+  header,
+  body,
+  channel,
+  imageDataUrl,
+}: {
+  header?: string;
+  body: string;
+  channel: Order["channel"];
+  imageDataUrl?: string;
+}) {
+  const accent = channel === "teams" ? "bg-indigo-500" : channel === "chatwork" ? "bg-teal-500" : "bg-violet-500";
+  const avatarLetter = channel === "teams" ? "T" : channel === "chatwork" ? "C" : "S";
   return (
     <div>
       {header ? <div className="mb-2 text-[11px] font-medium text-ink-muted">{header}</div> : null}
       <div className="flex gap-3">
         <div className={`mt-0.5 h-8 w-8 flex-none rounded-full ${accent} text-center text-sm leading-8 text-white`}>
-          {channel === "teams" ? "T" : "S"}
+          {avatarLetter}
         </div>
-        <div className="rounded-2xl rounded-tl-sm bg-surface-sunken px-4 py-3 text-sm leading-relaxed text-ink whitespace-pre-wrap">
-          {body}
+        <div className="min-w-0 space-y-2">
+          <div className="rounded-2xl rounded-tl-sm bg-surface-sunken px-4 py-3 text-sm leading-relaxed text-ink whitespace-pre-wrap">
+            {body}
+          </div>
+          {imageDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageDataUrl}
+              alt="添付画像 (AIが読み取り対象にしたスクリーンショット等)"
+              className="max-h-96 w-auto max-w-full rounded-xl border border-surface-border"
+            />
+          ) : null}
         </div>
       </div>
     </div>

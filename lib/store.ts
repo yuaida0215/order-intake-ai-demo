@@ -60,6 +60,9 @@ type Actions = {
 
   /** デモをリセット (全件 new に戻す) */
   resetDemo: () => void;
+
+  /** 外部取り込み(Chatwork等)で得た DemoOrder を先頭に追加 (sourceMessageId で重複排除)。戻り値は追加件数 */
+  addOrders: (orders: DemoOrder[]) => number;
 };
 
 // C案件の返信文面バリエーション (再生成デモ用)
@@ -175,4 +178,13 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
     }),
 
   resetDemo: () => set({ orders: cloneInitial(), orderSeq: 1 }),
+
+  addOrders: (orders) => {
+    const existing = get().orders;
+    const existingIds = new Set(existing.map((o) => o.sourceMessageId).filter(Boolean));
+    const toAdd = orders.filter((o) => !o.sourceMessageId || !existingIds.has(o.sourceMessageId));
+    if (toAdd.length === 0) return 0;
+    set((s) => ({ orders: [...toAdd, ...s.orders] }));
+    return toAdd.length;
+  },
 }));

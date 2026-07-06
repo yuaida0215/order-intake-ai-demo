@@ -9,7 +9,7 @@ AIが「読み取り → 構造化 → 分類 → 自動入力／担当者振り
 ## 本番URL（公開済み・パスワード保護）
 
 - **URL:** <https://order-intake-ai-demo.vercel.app>
-- **共有パスワード:** `juchu-demo-2026` （商談相手に URL とセットで伝える）
+- **共有パスワード:** Vercel の環境変数 `APP_PASSWORD` に設定（商談相手に URL とセットで伝える。この README には書かない）
 
 Vercel（`y-aida-3534`）にデプロイ済み。共有パスワードでログインした人だけ閲覧できます（署名Cookie方式）。
 
@@ -37,6 +37,22 @@ npx vercel deploy --prod --yes
 
 パスワードを変えたいときは、ダッシュボードで `APP_PASSWORD` の値を書き換えるだけ。
 再デプロイ不要で次のアクセスから新しいパスワードが有効になる。
+
+## 実チャネル取り込み（Chatwork / Slack / メール）
+
+受注一覧の「取り込み:」ボタン群から、**本物のチャネル**の直近メッセージをAI（claude-opus-4-8）で
+受注抽出→分類して一覧に追加できる。分類・返信ドラフト生成は既存デモと同じルール。
+同じメッセージの二重取り込みは自動スキップ。共通エンジンは `lib/ingest-server.ts`。
+
+必要な環境変数（ローカル=.env.local、本番=Vercelダッシュボード。共通で `ANTHROPIC_API_KEY` も必須）:
+
+| チャネル | 環境変数 | 取得方法 |
+|---|---|---|
+| Chatwork | `CHATWORK_API_TOKEN` / `CHATWORK_ROOM_ID` | Chatwork設定→API。ルームIDはルームURLの `#!rid` 以降 |
+| Slack | `SLACK_BOT_TOKEN` / `SLACK_CHANNEL_ID` | api.slack.com/apps でApp作成→Bot Token Scopes に `channels:history`+`users:read`→Install→xoxb-トークン。Botを対象チャンネルに `/invite`。チャンネルIDはチャンネル詳細の最下部 |
+| メール(Gmail) | `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` | Google 2段階認証を有効化→ myaccount.google.com/apppasswords で16桁のアプリパスワードを発行（IMAP接続に使用） |
+
+未設定のチャネルはボタンを押すと「環境変数◯◯が未設定です」と案内が出るだけで、他チャネルには影響しない。
 
 ## 画面（要件定義書の5画面）
 

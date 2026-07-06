@@ -44,6 +44,7 @@ const CHANNEL_COLOR: Record<OrderChannel, string> = {
   slack: "bg-purple-400",
   teams: "bg-indigo-500",
   edi: "bg-emerald-500",
+  chatwork: "bg-teal-500",
 };
 
 const AMOUNT_BAR = "bg-brand-500";

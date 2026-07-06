@@ -8,7 +8,8 @@ export type OrderChannel =
   | "email_body"
   | "slack"
   | "teams"
-  | "edi";
+  | "edi"
+  | "chatwork";
 
 export type OrderStatus =
   | "new"
@@ -111,6 +112,8 @@ export type Order = {
   logs: OrderLog[];
   /** 元データプレビュー用モックテキスト (§8) */
   sourcePreview?: SourcePreview;
+  /** 取り込み元メッセージID (Chatwork等) — 再取り込み時の重複排除に使用 */
+  sourceMessageId?: string;
 };
 
 /** 元データプレビュー (FAX画像/メール本文/Slack/EDI) */
@@ -122,6 +125,8 @@ export type SourcePreview = {
   body?: string;
   /** FAX画像の擬似行 (読み取り可否付き) */
   faxLines?: { text: string; readable: boolean }[];
+  /** 添付画像 (LINEスクショ等) の data URL — chat系プレビューで表示 */
+  imageDataUrl?: string;
 };
 
 // ============================================================
