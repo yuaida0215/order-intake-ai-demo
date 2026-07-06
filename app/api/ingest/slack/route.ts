@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   ingestMessages,
-  jstHm,
   missingEnv,
   type SourceMessage,
 } from "@/lib/ingest-server";
@@ -75,7 +74,7 @@ async function slackApi(method: string, token: string, params: string): Promise<
   return res.json();
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const missing = missingEnv(["SLACK_BOT_TOKEN", "SLACK_CHANNEL_ID", "ANTHROPIC_API_KEY"]);
     if (missing) {
@@ -84,6 +83,7 @@ export async function POST() {
         { status: 500 },
       );
     }
+    const { knownThreadKeys = [] } = (await req.json().catch(() => ({}))) as { knownThreadKeys?: string[] };
     const token = process.env.SLACK_BOT_TOKEN!;
     const channel = process.env.SLACK_CHANNEL_ID!;
 
@@ -153,14 +153,11 @@ export async function POST() {
       });
     }
 
-    const result = await ingestMessages(messages, {
-      channel: "slack",
-      sourceName: "Slackメッセージ",
-      contactAddress: (m) => `slack://channel/${channel}/${m.sender}`,
-      previewKind: "chat",
-      previewHeader: (m) => `Slack | ${m.sender}`,
-      previewBody: (m) => `${m.sender}  ${jstHm(m.sendTime)}\n${m.text}`,
-    });
+    const result = await ingestMessages(
+      messages,
+      { channel: "slack", sourceName: "Slackメッセージ", roomId: channel, roomLabel: `Slack #${channel}` },
+      knownThreadKeys,
+    );
     return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

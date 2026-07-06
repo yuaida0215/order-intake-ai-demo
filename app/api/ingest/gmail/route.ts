@@ -20,7 +20,7 @@ export const maxDuration = 60;
 
 const FETCH_COUNT = 15; // 直近何通を見るか
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const missing = missingEnv(["GMAIL_ADDRESS", "GMAIL_APP_PASSWORD", "ANTHROPIC_API_KEY"]);
     if (missing) {
@@ -29,6 +29,7 @@ export async function POST() {
         { status: 500 },
       );
     }
+    const { knownThreadKeys = [] } = (await req.json().catch(() => ({}))) as { knownThreadKeys?: string[] };
 
     const client = new ImapFlow({
       host: "imap.gmail.com",
@@ -90,15 +91,11 @@ export async function POST() {
       await client.logout().catch(() => {});
     }
 
-    const result = await ingestMessages(messages, {
-      channel: "email_body",
-      sourceName: "メール本文",
-      contactAddress: (m) => m.replyTo ?? "",
-      previewKind: "email",
-      previewHeader: (m) => `件名：${m.subject ?? "(件名なし)"} / 差出人：${m.sender} <${m.replyTo ?? ""}>`,
-      previewBody: (m) => m.text,
-      replySubject: (m) => (m.subject ? `Re: ${m.subject}` : "ご注文内容の確認のお願い"),
-    });
+    const result = await ingestMessages(
+      messages,
+      { channel: "email_body", sourceName: "メール本文", roomId: "inbox", roomLabel: "メール受信トレイ" },
+      knownThreadKeys,
+    );
     return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

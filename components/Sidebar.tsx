@@ -7,6 +7,9 @@ import { AgentAvatar } from "@/components/badges";
 
 const NAV = [
   { href: "/orders", label: "受注一覧", icon: "📥", match: (p: string) => p === "/orders" || p.startsWith("/orders/") },
+  { href: "/alerts", label: "受注アラート", icon: "🔔", match: (p: string) => p.startsWith("/alerts") },
+  { href: "/approvals", label: "上長確認待ち", icon: "👤", match: (p: string) => p.startsWith("/approvals") },
+  { href: "/tasks", label: "対応状況一覧", icon: "✅", match: (p: string) => p.startsWith("/tasks") },
   { href: "/dashboard", label: "月次ダッシュボード", icon: "📊", match: (p: string) => p.startsWith("/dashboard") },
 ];
 
@@ -14,6 +17,13 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const resetDemo = useOrderStore((s) => s.resetDemo);
+  const pendingAlerts = useOrderStore((s) => s.alerts.filter((a) => a.status === "pending").length);
+  const waitingApprovals = useOrderStore((s) => s.orders.filter((o) => o.approval?.status === "waiting").length);
+  const badgeFor = (href: string): number => {
+    if (href === "/alerts") return pendingAlerts;
+    if (href === "/approvals") return waitingApprovals;
+    return 0;
+  };
 
   return (
     <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-white/5 bg-night">
@@ -40,6 +50,7 @@ export function Sidebar() {
       <nav className="mt-1 flex-1 px-3">
         {NAV.map((item) => {
           const active = item.match(pathname);
+          const badge = badgeFor(item.href);
           return (
             <Link
               key={item.href}
@@ -51,7 +62,10 @@ export function Sidebar() {
               }`}
             >
               <span aria-hidden>{item.icon}</span>
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {badge > 0 && (
+                <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{badge}</span>
+              )}
             </Link>
           );
         })}

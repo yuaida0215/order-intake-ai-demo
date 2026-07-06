@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   ingestMessages,
-  jstHm,
   missingEnv,
   type SourceMessage,
 } from "@/lib/ingest-server";
@@ -39,7 +38,7 @@ function cleanBody(body: string): string {
     .trim();
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const missing = missingEnv(["CHATWORK_API_TOKEN", "CHATWORK_ROOM_ID", "ANTHROPIC_API_KEY"]);
     if (missing) {
@@ -48,6 +47,7 @@ export async function POST() {
         { status: 500 },
       );
     }
+    const { knownThreadKeys = [] } = (await req.json().catch(() => ({}))) as { knownThreadKeys?: string[] };
     const token = process.env.CHATWORK_API_TOKEN!;
     const roomId = process.env.CHATWORK_ROOM_ID!;
 
@@ -73,14 +73,11 @@ export async function POST() {
       .filter((m) => m.text.length > 0)
       .slice(-30);
 
-    const result = await ingestMessages(messages, {
-      channel: "chatwork",
-      sourceName: "Chatworkメッセージ",
-      contactAddress: () => `chatwork://room/${roomId}`,
-      previewKind: "chat",
-      previewHeader: (m) => `Chatwork | ${m.sender}`,
-      previewBody: (m) => `${m.sender}  ${jstHm(m.sendTime)}\n${m.text}`,
-    });
+    const result = await ingestMessages(
+      messages,
+      { channel: "chatwork", sourceName: "Chatworkメッセージ", roomId, roomLabel: `Chatworkルーム ${roomId}` },
+      knownThreadKeys,
+    );
     return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

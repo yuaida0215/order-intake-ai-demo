@@ -21,6 +21,10 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   reply_drafted: "返信ドラフト作成済み",
   waiting_customer_reply: "相手先返信待ち",
   completed: "完了",
+  quote_drafted: "見積書作成済み",
+  quote_sent: "見積送付済み",
+  waiting_manager_approval: "上長確認待ち",
+  po_received: "発注書受領・転記待ち",
 };
 
 /** ステータスの配色クラス (bg / text / border / dot) */
@@ -34,6 +38,10 @@ export const STATUS_STYLE: Record<OrderStatus, { chip: string; dot: string }> = 
   reply_drafted: { chip: "bg-purple-50 text-purple-700 border-purple-200", dot: "bg-purple-500" },
   waiting_customer_reply: { chip: "bg-red-50 text-red-700 border-red-200", dot: "bg-red-500" },
   completed: { chip: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  quote_drafted: { chip: "bg-indigo-50 text-indigo-700 border-indigo-200", dot: "bg-indigo-500" },
+  quote_sent: { chip: "bg-indigo-50 text-indigo-700 border-indigo-200", dot: "bg-indigo-500" },
+  waiting_manager_approval: { chip: "bg-purple-50 text-purple-700 border-purple-200", dot: "bg-purple-500" },
+  po_received: { chip: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
 };
 
 export const ASSIGNEE_LABEL: Record<AssigneeType, string> = {

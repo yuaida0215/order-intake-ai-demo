@@ -1,16 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { MissingField, Order, OrderChannel, OrderItem } from "./types";
+import type { AlertClassification, OrderAlert, OrderChannel, OrderItem, ThreadMessage } from "./types";
 
 // ------------------------------------------------------------
 // チャネル共通の取り込みエンジン (サーバー専用)
-//   受信メッセージ一覧 → Claudeで受注検出・構造化抽出 →
-//   §5の分類ルール(決定論的)で Order を組み立てる。
+//   受信メッセージ一覧 → 会話スレッドへグルーピング →
+//   Claudeでスレッド単位の受注検出・構造化抽出 → OrderAlert[] を返す。
 //   Chatwork / Slack / メール の各ルートから利用する。
+//   (§1 常時監視 / §2 会話3〜4ラリーを元データにする要望への対応)
 // ------------------------------------------------------------
 
 /** チャネル非依存の受信メッセージ */
 export type SourceMessage = {
-  /** sourceMessageId として使う一意ID (チャネル接頭辞付き推奨) */
+  /** 一意ID (チャネル接頭辞付き推奨) */
   id: string;
   /** 送信者表示名 */
   sender: string;
@@ -30,12 +31,10 @@ export type SourceMessage = {
 export type ChannelConfig = {
   channel: OrderChannel;
   sourceName: string;
-  contactAddress: (msg: SourceMessage) => string;
-  previewKind: "chat" | "email";
-  previewHeader: (msg: SourceMessage) => string;
-  previewBody: (msg: SourceMessage) => string;
-  /** C案件の返信ドラフト件名 (メールは Re: を付ける等)。省略時 null */
-  replySubject?: (msg: SourceMessage) => string | null;
+  /** 会話のグルーピング単位となるルーム/チャンネルのID (Chatworkルーム, Slackチャンネル等) */
+  roomId: string;
+  /** アラート画面に表示するルーム名。省略時は sourceName を使う */
+  roomLabel?: string;
 };
 
 type ExtractedItem = {
@@ -46,45 +45,61 @@ type ExtractedItem = {
   unitPrice: number | null;
 };
 
-type ExtractedOrder = {
-  sourceMessageId: string;
+type ThreadResult = {
+  threadKey: string;
+  classification: AlertClassification | "not_order";
+  confidence: number;
+  reasonJa: string;
   customerName: string | null;
   contactName: string | null;
+  messageSenderRoles: { messageId: string; role: "customer" | "self" }[];
   requestedDeliveryDate: string | null;
   deliveryAddress: string | null;
   items: ExtractedItem[];
-  confidence: number;
-  summary: string;
 };
 
-const EXTRACT_SCHEMA = {
+const THREAD_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["orders"],
+  required: ["results"],
   properties: {
-    orders: {
+    results: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
         required: [
-          "sourceMessageId",
+          "threadKey",
+          "classification",
+          "confidence",
+          "reasonJa",
           "customerName",
           "contactName",
+          "messageSenderRoles",
           "requestedDeliveryDate",
           "deliveryAddress",
           "items",
-          "confidence",
-          "summary",
         ],
         properties: {
-          sourceMessageId: { type: "string" },
+          threadKey: { type: "string" },
+          classification: { type: "string", enum: ["confirmed_order", "probable_order", "not_order"] },
+          confidence: { type: "number" },
+          reasonJa: { type: "string", description: "80字以内の判定理由" },
           customerName: { anyOf: [{ type: "string" }, { type: "null" }] },
           contactName: { anyOf: [{ type: "string" }, { type: "null" }] },
-          requestedDeliveryDate: {
-            anyOf: [{ type: "string" }, { type: "null" }],
-            description: "YYYY-MM-DD",
+          messageSenderRoles: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["messageId", "role"],
+              properties: {
+                messageId: { type: "string" },
+                role: { type: "string", enum: ["customer", "self"] },
+              },
+            },
           },
+          requestedDeliveryDate: { anyOf: [{ type: "string" }, { type: "null" }], description: "YYYY-MM-DD" },
           deliveryAddress: { anyOf: [{ type: "string" }, { type: "null" }] },
           items: {
             type: "array",
@@ -101,31 +116,30 @@ const EXTRACT_SCHEMA = {
               },
             },
           },
-          confidence: { type: "number" },
-          summary: { type: "string" },
         },
       },
     },
   },
 } as const;
 
-const SYSTEM_PROMPT = `あなたは「受注取り込みAI」の抽出エンジンです。
-与えられるメッセージ/メール一覧から、「商品の注文・発注依頼」であるものだけを検出し、構造化して返してください。
+const SYSTEM_PROMPT = `あなたは商品販売会社の「受注監視AI」です。社内担当者(self)と顧客(customer)が入り混じった会話スレッドをいくつか受け取ります。
+各スレッドについて、顧客から受注依頼が来ているかどうかを会話の流れ全体から判定し、構造化して返してください。
 
-ルール:
-- 挨拶・雑談・質問・納期確認への返信・社内連絡・広告/通知メールなどは受注ではないので除外する
-- 1つの注文メッセージ = 1つの order。複数商品が書かれていれば items を複数にする
-- customerName(取引先名)は本文中の会社名を最優先。なければ送信者名や署名から推定(個人名だけなら null)
-- 日付は必ず YYYY-MM-DD 形式。「来週金曜」等の相対表現は送信日時を基準に確実に解釈できる場合のみ変換し、曖昧なら null
-- 数量(quantity)・単価(unitPrice)は半角数値。書かれていなければ null
-- confidence はそのメッセージが受注であり抽出が正確である確信度 (0〜1)
-- summary は抽出内容の1文サマリ(日本語)
+判定は3値のいずれか:
+- confirmed_order: 顧客側の発言に発注意思の確定表現がある（「発注します」「注文お願いします」「この内容で進めてください」等）。品目・数量がある程度特定できる。
+- probable_order: 見積依頼・在庫確認・「前回と同じものを」等、受注に発展する可能性が高いが確定発言がない。
+- not_order: 雑談・請求/納期問い合わせへの返信・社内連絡・広告/通知など、受注に関係ない会話。
 
-画像が添付されている場合:
-- 画像内の文字(LINE等のトーク画面のスクリーンショット、注文書・FAXの写真など)も読み取って抽出する
-- トーク画面のスクショの場合、投稿者はスクショを転送した社内担当者であることが多い。取引先(customerName)や注文者(contactName)は「スクショ画像の中の会話相手」(画面上部の名前や相手側の発言)から推定する
-- 注文書の写真の場合、書面内の発注元・品目・数量を読み取る
-- 画像が不鮮明で判読できない項目は無理に埋めず null にし、confidence を下げる`;
+重要なルール:
+- 判定は必ず会話全体の流れで行うこと。単独のメッセージだけでは受注に見えても、直後のやり取りで覆っていれば最新の状況を優先する（例: 自社側が「在庫切れです」と返し、顧客が「では結構です」と答えていれば not_order）。
+- 各メッセージについて、話者が顧客(customer)か自社側(self)かを、送信者名・文体・立場から判定し messageSenderRoles に含める。判断できない場合は customer とする。
+- customerName(取引先名)は本文中の会社名を最優先。なければ送信者名や署名から推定する（個人名だけの場合は null）。
+- 日付は必ず YYYY-MM-DD 形式。「来週金曜」等の相対表現は送信日時を基準に確実に解釈できる場合のみ変換し、曖昧なら null。
+- 数量(quantity)・単価(unitPrice)は半角数値。書かれていなければ null。
+- confidence は判定の確信度 (0〜1)。
+- reasonJa は日本語で80字以内の判定理由。
+- classification が not_order の場合、items は空配列でよい。
+- 画像が添付されている場合は、画像内の文字（LINE等のトーク画面のスクリーンショット、注文書・FAXの写真など）も読み取って抽出する。`;
 
 // unix秒 → JST(+09:00)のISO文字列
 export function toJstIso(unixSec: number): string {
@@ -145,152 +159,100 @@ export function jstHm(unixSec: number): string {
   return toJstIso(unixSec).slice(11, 16);
 }
 
-function emptyItem(): ExtractedItem {
-  return { productCode: null, productName: null, quantity: null, unit: null, unitPrice: null };
+// ------------------------------------------------------------
+// 会話スレッドへのグルーピング (§4-2)
+//   同一ルーム内で送信間隔が30分以内のメッセージを1つの会話とみなす。
+//   1スレッドは最大10メッセージ、48時間を超えたら別スレッドにする。
+// ------------------------------------------------------------
+
+const THREAD_GAP_SEC = 30 * 60;
+const THREAD_MAX_SPAN_SEC = 48 * 60 * 60;
+const THREAD_MAX_MESSAGES = 10;
+
+type ThreadCandidate = { threadKey: string; messages: SourceMessage[] };
+
+function groupIntoThreads(messages: SourceMessage[], cfg: ChannelConfig): ThreadCandidate[] {
+  const ordered = [...messages].sort((a, b) => a.sendTime - b.sendTime);
+  const groups: SourceMessage[][] = [];
+  let current: SourceMessage[] = [];
+
+  for (const m of ordered) {
+    if (current.length === 0) {
+      current.push(m);
+      continue;
+    }
+    const prev = current[current.length - 1];
+    const first = current[0];
+    const withinGap = m.sendTime - prev.sendTime <= THREAD_GAP_SEC;
+    const withinSpan = m.sendTime - first.sendTime <= THREAD_MAX_SPAN_SEC;
+    if (withinGap && withinSpan && current.length < THREAD_MAX_MESSAGES) {
+      current.push(m);
+    } else {
+      groups.push(current);
+      current = [m];
+    }
+  }
+  if (current.length > 0) groups.push(current);
+
+  return groups.map((msgs) => ({
+    threadKey: `${cfg.channel}:${cfg.roomId}:${msgs[msgs.length - 1].id}`,
+    messages: msgs,
+  }));
 }
 
-// 抽出結果 + 元メッセージ → Order (§5の分類ルールを決定論的に適用)
-function buildOrder(ex: ExtractedOrder, msg: SourceMessage, cfg: ChannelConfig): Order {
-  const items: OrderItem[] = (ex.items.length > 0 ? ex.items : [emptyItem()]).map(
-    (it, idx) => ({
-      lineNo: idx + 1,
-      productCode: it.productCode,
-      productName: it.productName,
-      quantity: it.quantity,
-      unit: it.unit,
-      unitPrice: it.unitPrice,
-      amount: it.quantity !== null && it.unitPrice !== null ? it.quantity * it.unitPrice : null,
-    }),
-  );
-
-  const amounts = items.map((i) => i.amount);
-  const subtotal = amounts.every((a): a is number => a !== null)
-    ? amounts.reduce((a, b) => a + b, 0)
-    : null;
-  const tax = subtotal !== null ? Math.round(subtotal * 0.1) : null;
-  const total = subtotal !== null && tax !== null ? subtotal + tax : null;
-
-  // 必須項目チェック (§5.2)。チャット/メール注文の不足は相手先由来 → requiredBy: customer
-  const missingFields: MissingField[] = [];
-  const miss = (fieldKey: string, fieldLabel: string) =>
-    missingFields.push({
-      fieldKey,
-      fieldLabel,
-      reason: `メッセージ内に${fieldLabel}の記載がありません。`,
-      requiredBy: "customer",
-    });
-  if (!ex.customerName) miss("customerName", "取引先名");
-  if (!ex.requestedDeliveryDate) miss("requestedDeliveryDate", "希望納品日");
-  if (!ex.deliveryAddress) miss("deliveryAddress", "納品先住所");
-  if (!items[0]?.productName && !items[0]?.productCode) miss("items.productName", "商品名");
-  if (items[0]?.quantity === null) miss("items.quantity", "数量");
-
-  // 分類 (§5.4)
-  let status: Order["status"];
-  let exceptionType: Order["exceptionType"];
-  let assignedTo: Order["assignedTo"];
-  let recommendedAction: string;
-  let draftReply: Order["draftReply"] = null;
-
-  if (ex.confidence < 0.5) {
-    exceptionType = "partial_missing";
-    status = "internal_review_required";
-    assignedTo = "internal_user";
-    recommendedAction = "抽出の確信度が低いため、メッセージ内容を確認してください。";
-  } else if (missingFields.length > 0) {
-    exceptionType = "customer_missing_info";
-    status = "customer_action_required";
-    assignedTo = "customer";
-    recommendedAction = "取引先に不足情報の追記を依頼してください。";
-    draftReply = {
-      channel: cfg.channel,
-      to: msg.replyTo ?? msg.sender,
-      subject: cfg.replySubject ? cfg.replySubject(msg) : null,
-      body:
-        "ご注文ありがとうございます。手配を進めるにあたり、以下の情報が不足しておりました。お手数ですが、ご返信いただけますでしょうか。\n" +
-        missingFields.map((m) => `・${m.fieldLabel}`).join("\n"),
-      editable: true,
-      status: "draft",
-    };
-  } else {
-    exceptionType = null;
-    status = "read_completed";
-    assignedTo = "ai";
-    recommendedAction = "基幹システムへ自動入力してください。";
-  }
-
-  return {
-    id: `${cfg.channel.toUpperCase().replace("_", "-")}-${ex.sourceMessageId}`,
-    receivedAt: toJstIso(msg.sendTime),
-    channel: cfg.channel,
-    sourceName: cfg.sourceName,
-    customerName: ex.customerName,
-    customerContactName: ex.contactName,
-    customerContactAddress: cfg.contactAddress(msg),
-    orderDate: jstDate(msg.sendTime),
-    requestedDeliveryDate: ex.requestedDeliveryDate,
-    deliveryAddress: ex.deliveryAddress,
-    items,
-    subtotalAmount: subtotal,
-    taxAmount: tax,
-    totalAmount: total,
-    status,
-    exceptionType,
-    assignedTo,
-    missingFields,
-    validationErrors: [],
-    aiConfidenceScore: ex.confidence,
-    aiSummary: ex.summary,
-    recommendedAction,
-    draftReply,
-    coreSystemInput: null,
-    logs: [],
-    sourcePreview: {
-      kind: cfg.previewKind,
-      header: cfg.previewHeader(msg),
-      body: cfg.previewBody(msg),
-      imageDataUrl: msg.images?.[0]
-        ? `data:${msg.images[0].mediaType};base64,${msg.images[0].base64}`
-        : undefined,
-    },
-    sourceMessageId: ex.sourceMessageId,
-  };
+function toThreadMessages(msgs: SourceMessage[], roles: Map<string, "customer" | "self">): ThreadMessage[] {
+  return msgs.map((m) => ({
+    messageId: m.id,
+    senderName: m.sender,
+    role: roles.get(m.id) ?? "customer",
+    sentAt: toJstIso(m.sendTime),
+    text: m.text,
+  }));
 }
 
 /**
- * メッセージ一覧をClaudeにかけて受注を抽出し、Order[]を返す。
+ * メッセージ一覧を会話スレッドへグルーピングし、Claudeへ一括で渡して
+ * 受注らしさを判定する。knownThreadKeys に含まれるスレッドはスキップする
+ * (アーカイブ済み・既に取り込み済みのスレッドの重複検知防止)。
  * ANTHROPIC_API_KEY はこの関数内でチェックする。
  */
 export async function ingestMessages(
   messages: SourceMessage[],
   cfg: ChannelConfig,
-): Promise<{ orders: Order[]; scanned: number }> {
-  if (messages.length === 0) return { orders: [], scanned: 0 };
+  knownThreadKeys: string[] = [],
+): Promise<{ alerts: OrderAlert[]; scanned: number }> {
+  if (messages.length === 0) return { alerts: [], scanned: 0 };
+
+  const knownSet = new Set(knownThreadKeys);
+  const threads = groupIntoThreads(messages, cfg).filter((t) => !knownSet.has(t.threadKey));
+  if (threads.length === 0) return { alerts: [], scanned: messages.length };
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  // テキスト+画像のマルチモーダルcontentを組み立てる (画像は全体で最大8枚に制限)
   const MAX_TOTAL_IMAGES = 8;
   let imageBudget = MAX_TOTAL_IMAGES;
   const contentBlocks: Anthropic.ContentBlockParam[] = [];
-  for (const m of messages) {
-    const subjectLine = m.subject ? ` / 件名: ${m.subject}` : "";
-    const imgNote = m.images?.length ? ` / 添付画像: ${m.images.length}枚(直後に続く)` : "";
-    contentBlocks.push({
-      type: "text",
-      text: `---\nID: ${m.id} / 送信者: ${m.sender}${subjectLine} / 送信日時: ${jstDate(m.sendTime)} ${jstHm(m.sendTime)}${imgNote} / 本文:\n${m.text || "（本文なし・画像のみ）"}`,
-    });
-    for (const img of m.images ?? []) {
-      if (imageBudget <= 0) break;
-      imageBudget--;
+  for (const thread of threads) {
+    contentBlocks.push({ type: "text", text: `\n===== スレッド threadKey: ${thread.threadKey} =====` });
+    for (const m of thread.messages) {
+      const subjectLine = m.subject ? ` / 件名: ${m.subject}` : "";
+      const imgNote = m.images?.length ? ` / 添付画像: ${m.images.length}枚(直後に続く)` : "";
       contentBlocks.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: img.mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-          data: img.base64,
-        },
+        type: "text",
+        text: `---\nmessageId: ${m.id} / 送信者: ${m.sender}${subjectLine} / 送信日時: ${jstDate(m.sendTime)} ${jstHm(m.sendTime)}${imgNote} / 本文:\n${m.text || "（本文なし・画像のみ）"}`,
       });
+      for (const img of m.images ?? []) {
+        if (imageBudget <= 0) break;
+        imageBudget--;
+        contentBlocks.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: img.mediaType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+            data: img.base64,
+          },
+        });
+      }
     }
   }
 
@@ -299,7 +261,7 @@ export async function ingestMessages(
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: contentBlocks }],
-    output_config: { format: { type: "json_schema", schema: EXTRACT_SCHEMA } },
+    output_config: { format: { type: "json_schema", schema: THREAD_SCHEMA } },
   } as Parameters<typeof client.messages.create>[0])) as Anthropic.Message;
 
   if (response.stop_reason === "refusal") {
@@ -309,16 +271,65 @@ export async function ingestMessages(
     (b): b is Extract<(typeof response.content)[number], { type: "text" }> => b.type === "text",
   );
   if (!textBlock) throw new Error("AIの応答が空でした。");
-  const parsed = JSON.parse(textBlock.text) as { orders: ExtractedOrder[] };
+  const parsed = JSON.parse(textBlock.text) as { results: ThreadResult[] };
 
-  const byId = new Map(messages.map((m) => [m.id, m]));
-  const orders: Order[] = [];
-  for (const ex of parsed.orders) {
-    const msg = byId.get(String(ex.sourceMessageId));
-    if (!msg) continue; // 幻覚ID対策: 実在メッセージ以外は捨てる
-    orders.push(buildOrder(ex, msg, cfg));
+  const threadByKey = new Map(threads.map((t) => [t.threadKey, t]));
+  const alerts: OrderAlert[] = [];
+
+  for (const r of parsed.results) {
+    if (r.classification === "not_order") continue;
+    const thread = threadByKey.get(r.threadKey);
+    if (!thread) continue; // 幻覚対策: 実在しないthreadKeyは捨てる
+
+    const roles = new Map(r.messageSenderRoles.map((x) => [x.messageId, x.role]));
+    const threadMessages = toThreadMessages(thread.messages, roles);
+    const lastMsg = thread.messages[thread.messages.length - 1];
+
+    const items: OrderItem[] = r.items.map((it, idx) => ({
+      lineNo: idx + 1,
+      productCode: it.productCode,
+      productName: it.productName,
+      quantity: it.quantity,
+      unit: it.unit,
+      unitPrice: it.unitPrice,
+      amount: it.quantity !== null && it.unitPrice !== null ? it.quantity * it.unitPrice : null,
+    }));
+
+    alerts.push({
+      id: `ALERT-${thread.threadKey}`,
+      detectedAt: toJstIso(lastMsg.sendTime),
+      channel: cfg.channel,
+      kind: "order_conversation",
+      thread: {
+        threadKey: thread.threadKey,
+        channel: cfg.channel,
+        roomName: cfg.roomLabel ?? cfg.sourceName,
+        participants: [...new Set(thread.messages.map((m) => m.sender))],
+        messages: threadMessages,
+        lastMessageAt: toJstIso(lastMsg.sendTime),
+      },
+      aiClassification: r.classification,
+      aiConfidence: r.confidence,
+      aiReason: r.reasonJa,
+      suggestedCustomerName: r.customerName,
+      status: "pending",
+      orderId: null,
+      archivedAt: null,
+      archivedReason: null,
+      poDocument: null,
+      prefilledOrder: {
+        customerName: r.customerName,
+        customerContactName: r.contactName,
+        requestedDeliveryDate: r.requestedDeliveryDate,
+        deliveryAddress: r.deliveryAddress,
+        items,
+        aiConfidenceScore: r.confidence,
+        aiSummary: r.reasonJa,
+      },
+    });
   }
-  return { orders, scanned: messages.length };
+
+  return { alerts, scanned: messages.length };
 }
 
 /** 必須envの存在チェック。欠けている名前を返す */

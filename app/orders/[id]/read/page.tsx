@@ -22,6 +22,7 @@ import {
 import { SourcePreview } from "@/components/SourcePreview";
 import { yen, formatDate } from "@/lib/format";
 import { AI_READING_STEPS } from "@/lib/core";
+import { NextActionsPanel } from "@/components/NextActionsPanel";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -400,16 +401,7 @@ export default function Page({ params }: { params: { id: string } }) {
                   {isEditing ? "編集を終了" : "内容を修正"}
                 </Button>
 
-                {order.exceptionType === null ? (
-                  <Button
-                    variant="primary"
-                    onClick={() =>
-                      router.push("/orders/" + order.id + "/core-system-input")
-                    }
-                  >
-                    基幹システムへ入力 →
-                  </Button>
-                ) : (
+                {order.exceptionType !== null && (
                   <Button
                     variant="danger"
                     onClick={() =>
@@ -420,6 +412,8 @@ export default function Page({ params }: { params: { id: string } }) {
                   </Button>
                 )}
               </div>
+
+              {order.exceptionType === null && <NextActionsPanel order={order} />}
             </div>
           )}
         </Card>

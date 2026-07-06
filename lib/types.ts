@@ -20,7 +20,11 @@ export type OrderStatus =
   | "customer_action_required"
   | "reply_drafted"
   | "waiting_customer_reply"
-  | "completed";
+  | "completed"
+  | "quote_drafted"
+  | "quote_sent"
+  | "waiting_manager_approval"
+  | "po_received";
 
 export type ExceptionType =
   | "ocr_failed"
@@ -79,7 +83,7 @@ export type CoreSystemInput = {
 
 export type OrderLog = {
   timestamp: string;
-  actor: "ai" | "internal_user" | "system";
+  actor: "ai" | "internal_user" | "system" | "manager";
   action: string;
   message: string;
 };
@@ -114,11 +118,21 @@ export type Order = {
   sourcePreview?: SourcePreview;
   /** 取り込み元メッセージID (Chatwork等) — 再取り込み時の重複排除に使用 */
   sourceMessageId?: string;
+  /** 会話スレッドの重複排除キー (受注アラート経由の案件のみ) */
+  threadKey?: string;
+  /** 発生元アラートID (受注アラート経由の案件のみ) */
+  alertId?: string;
+  /** 見積書 (見積書作成ボタンで生成) */
+  quote?: Quote;
+  /** 上長への確認依頼 (上長に確認依頼ボタンで生成) */
+  approval?: ApprovalRequest;
+  /** 発注書 (発注書受領アラート経由の案件のみ) */
+  poDocument?: PurchaseOrderDoc;
 };
 
-/** 元データプレビュー (FAX画像/メール本文/Slack/EDI) */
+/** 元データプレビュー (FAX画像/メール本文/Slack/EDI/会話スレッド) */
 export type SourcePreview = {
-  kind: "fax_image" | "email" | "chat" | "edi";
+  kind: "fax_image" | "email" | "chat" | "edi" | "conversation";
   /** メール件名やチャット送信者など */
   header?: string;
   /** 本文テキスト (メール/チャット/EDI) */
@@ -127,6 +141,116 @@ export type SourcePreview = {
   faxLines?: { text: string; readable: boolean }[];
   /** 添付画像 (LINEスクショ等) の data URL — chat系プレビューで表示 */
   imageDataUrl?: string;
+  /** 会話ラリー (kind="conversation" のとき使用) */
+  messages?: ThreadMessage[];
+};
+
+// ============================================================
+// 受注アラート・会話監視 (機能拡張)
+// ============================================================
+
+export type ThreadMessage = {
+  messageId: string;
+  senderName: string;
+  role: "customer" | "self";
+  sentAt: string;
+  text: string;
+};
+
+export type ConversationThread = {
+  /** 重複排除キー: `${channel}:${roomOrThreadId}:${lastMessageId}` */
+  threadKey: string;
+  channel: OrderChannel;
+  roomName: string;
+  participants: string[];
+  messages: ThreadMessage[];
+  lastMessageAt: string;
+};
+
+export type AlertClassification = "confirmed_order" | "probable_order";
+
+/** AIが会話/書類から検知した、人の確認を待つアラート */
+export type OrderAlert = {
+  id: string;
+  detectedAt: string;
+  channel: OrderChannel;
+  kind: "order_conversation" | "purchase_order_received";
+  thread: ConversationThread;
+  aiClassification: AlertClassification;
+  aiConfidence: number;
+  aiReason: string;
+  suggestedCustomerName: string | null;
+  status: "pending" | "accepted" | "archived";
+  orderId: string | null;
+  archivedAt: string | null;
+  archivedReason: string | null;
+  /** kind="purchase_order_received" のときの発注書本体 */
+  poDocument: PurchaseOrderDoc | null;
+  /** AIが会話から事前抽出した受注内容 (accept時にOrderへ転写する「隠し正解」) */
+  prefilledOrder?: {
+    customerName: string | null;
+    customerContactName: string | null;
+    requestedDeliveryDate: string | null;
+    deliveryAddress: string | null;
+    items: OrderItem[];
+    aiConfidenceScore: number;
+    aiSummary: string;
+  };
+};
+
+export type Quote = {
+  quoteNo: string;
+  createdAt: string;
+  validUntil: string;
+  customerName: string | null;
+  items: OrderItem[];
+  subtotal: number | null;
+  tax: number | null;
+  total: number | null;
+  deliveryTerms: string;
+  paymentTerms: string;
+  notes: string;
+  status: "generating" | "draft" | "sent_mock" | "approval_requested";
+  sentAt: string | null;
+};
+
+export type ApprovalTarget = "quote" | "order" | "po";
+
+export type ApprovalRequest = {
+  id: string;
+  target: ApprovalTarget;
+  approverName: string;
+  requestedOnDemoDate: string;
+  requesterNote: string;
+  status: "waiting" | "approved" | "remanded";
+  remindersSent: number;
+  lastReminderOnDemoDate: string | null;
+  decisionComment: string | null;
+  /** 承認/差し戻し後にOrder.statusを戻す先 */
+  returnStatus: OrderStatus;
+};
+
+export type ReminderChannel = "email" | "slack" | "chatwork";
+
+export type ReminderSettings = {
+  channel: ReminderChannel;
+  thresholdBusinessDays: 1 | 2 | 3 | 5;
+};
+
+export type PurchaseOrderDoc = {
+  poNo: string;
+  receivedAt: string;
+  previewLines: { text: string; readable: boolean }[];
+  extracted: {
+    customerName: string | null;
+    orderDate: string | null;
+    requestedDeliveryDate: string | null;
+    deliveryAddress: string | null;
+    items: OrderItem[];
+    totalAmount: number | null;
+  };
+  relatedQuoteNo: string | null;
+  transcriptionStatus: "not_started" | "transcribing" | "completed";
 };
 
 // ============================================================

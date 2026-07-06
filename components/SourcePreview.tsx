@@ -1,5 +1,6 @@
 import { CHANNEL_ICON, CHANNEL_LABEL, formatDateTime } from "@/lib/format";
 import type { Order } from "@/lib/types";
+import { ConversationPreview } from "./ConversationPreview";
 
 /** 元データプレビュー (§6.2 / §8) — チャネルごとに見た目を出し分ける */
 export function SourcePreview({ order }: { order: Order }) {
@@ -24,6 +25,11 @@ export function SourcePreview({ order }: { order: Order }) {
           <ChatPreview header={p.header} body={p.body ?? ""} channel={order.channel} imageDataUrl={p.imageDataUrl} />
         ) : p?.kind === "edi" ? (
           <EdiPreview header={p.header} body={p.body ?? ""} />
+        ) : p?.kind === "conversation" ? (
+          <div>
+            {p.header ? <div className="mb-2 text-[11px] font-medium text-ink-muted">{p.header}</div> : null}
+            <ConversationPreview messages={p.messages ?? []} />
+          </div>
         ) : (
           <p className="text-sm text-ink-muted">元データプレビューはありません。</p>
         )}

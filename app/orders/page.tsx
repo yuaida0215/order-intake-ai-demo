@@ -17,7 +17,6 @@ import type { AssigneeType, DemoOrder, OrderChannel, OrderStatus } from "@/lib/t
 import { AgentAvatar, AssigneeBadge, CategoryBadge, ChannelBadge, StatusBadge } from "@/components/badges";
 import { KpiCard } from "@/components/Kpi";
 import { Button, Card } from "@/components/ui";
-import { toDemoOrders } from "@/lib/ingest";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -26,7 +25,10 @@ export default function OrdersPage() {
   const orders = useOrderStore((s) => s.orders);
   const markReading = useOrderStore((s) => s.markReading);
   const revealOrder = useOrderStore((s) => s.revealOrder);
-  const addOrders = useOrderStore((s) => s.addOrders);
+  const addAlerts = useOrderStore((s) => s.addAlerts);
+  const alerts = useOrderStore((s) => s.alerts);
+  const pendingAlertCount = useOrderStore((s) => s.alerts.filter((a) => a.status === "pending").length);
+  const waitingApprovalCount = useOrderStore((s) => s.orders.filter((o) => o.approval?.status === "waiting").length);
 
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [channelFilter, setChannelFilter] = useState<OrderChannel | "all">("all");
@@ -80,19 +82,27 @@ export default function OrdersPage() {
     setImporting(label);
     setImportNote(null);
     try {
-      const res = await fetch(`/api/ingest/${endpoint}`, { method: "POST" });
+      const knownThreadKeys = [
+        ...alerts.map((a) => a.thread.threadKey),
+        ...orders.map((o) => o.threadKey).filter((k): k is string => !!k),
+      ];
+      const res = await fetch(`/api/ingest/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ knownThreadKeys }),
+      });
       const data = await res.json();
       if (!res.ok) {
         setImportNote(`${label}取り込みエラー: ${data.error ?? res.status}`);
         return;
       }
-      const added = addOrders(toDemoOrders(data.orders));
+      const added = addAlerts(data.alerts ?? []);
       setImportNote(
         added > 0
-          ? `${label}から${added}件の受注を取り込みました。「AIで一括読み取り」で分類できます。`
-          : (data.orders?.length ?? 0) > 0
-            ? `${label}に新着はありません（すべて取り込み済みです）。`
-            : `${label}に受注らしいメッセージは見つかりませんでした。`
+          ? `${label}から受注らしい会話を${added}件検知しました。「受注アラート」で確認してください。`
+          : (data.scanned ?? 0) > 0
+            ? `${label}に新着はありません（すべて確認済みです）。`
+            : `${label}に受注らしい会話は見つかりませんでした。`
       );
     } catch (e) {
       setImportNote(`${label}取り込みエラー: サーバーに接続できませんでした。`);
@@ -139,13 +149,32 @@ export default function OrdersPage() {
       </div>
 
       {/* KPIカード */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-7">
         <KpiCard label="本日受信件数" value={kpi.receivedToday} tone="brand" icon="📥" />
+        <KpiCard label="受注アラート" value={pendingAlertCount} tone="red" icon="🔔" />
         <KpiCard label="自動入力完了" value={kpi.autoInput} tone="emerald" icon="✅" />
         <KpiCard label="自社確認待ち" value={kpi.internalWait} tone="amber" icon="🧑‍💼" />
         <KpiCard label="相手先確認待ち" value={kpi.customerWait} tone="red" icon="📨" />
+        <KpiCard label="上長確認待ち" value={waitingApprovalCount} tone="amber" icon="👤" />
         <KpiCard label="受注金額（読取済）" value={<span className="gradient-text">{yen(kpi.monthlyAmount)}</span>} tone="default" icon="💴" />
       </div>
+
+      {/* 受注アラートバンド */}
+      {pendingAlertCount > 0 && (
+        <button
+          type="button"
+          onClick={() => router.push("/alerts")}
+          className="ai-border block w-full rounded-2xl text-left"
+        >
+          <div className="flex items-center gap-3 rounded-[15px] bg-white px-5 py-3.5">
+            <AgentAvatar size="h-9 w-9" pulse />
+            <span className="text-sm text-ink">
+              🔔 受注らしい会話を<b className="text-brand-700">{pendingAlertCount}件</b>検知しています →{" "}
+              <span className="font-semibold text-brand-700">アラートを確認</span>
+            </span>
+          </div>
+        </button>
+      )}
 
       {/* Chatwork取り込み結果 */}
       {importNote && (

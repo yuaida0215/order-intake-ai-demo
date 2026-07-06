@@ -41,6 +41,19 @@ export function makeOrderNo(seq: number): string {
   return `ORD-202607-${String(seq).padStart(4, "0")}`;
 }
 
+/** 見積番号を採番 (Q-2026-0001) */
+export function makeQuoteNo(seq: number): string {
+  return `Q-2026-${String(seq).padStart(4, "0")}`;
+}
+
+// 見積書自動生成演出のステップ文言
+export const QUOTE_GENERATE_STEPS: string[] = [
+  "受注内容を確認しています…",
+  "見積項目を計算しています…",
+  "納期・支払条件を設定しています…",
+  "見積書を組み立てています…",
+];
+
 // AI読み取り演出のステップ文言 (§1.2 / SCR-002)
 export const AI_READING_STEPS: string[] = [
   "元データを取得しています…",

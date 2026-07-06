@@ -9,7 +9,7 @@ import {
   confidencePct,
   orderCategory,
 } from "@/lib/format";
-import type { AssigneeType, ExceptionType, OrderChannel, OrderStatus } from "@/lib/types";
+import type { AlertClassification, AssigneeType, ExceptionType, OrderChannel, OrderStatus } from "@/lib/types";
 
 const chipBase =
   "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap";
@@ -64,6 +64,21 @@ export function ConfidenceBadge({ score }: { score: number }) {
       ? "bg-amber-50 text-amber-700 border-amber-200"
       : "bg-red-50 text-red-700 border-red-200";
   return <span className={`${chipBase} ${color}`}>信頼度 {confidencePct(score)}</span>;
+}
+
+export function AlertClassificationBadge({ classification }: { classification: AlertClassification }) {
+  if (classification === "confirmed_order") {
+    return (
+      <span className={`${chipBase} border-red-200 bg-red-50 text-red-700`}>
+        🔴 受注確定発言あり
+      </span>
+    );
+  }
+  return (
+    <span className={`${chipBase} border-amber-200 bg-amber-50 text-amber-700`}>
+      🟡 受注の可能性あり
+    </span>
+  );
 }
 
 /** AIエージェントのアバター (グラデーション+グロー)。size は tailwind の h/w クラス */
