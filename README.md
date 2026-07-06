@@ -24,9 +24,14 @@ npm run dev      # → http://localhost:3300
 
 ## 再デプロイ・パスワード変更
 
-環境変数（`APP_PASSWORD` / `AUTH_SECRET`）は **Vercel ダッシュボードの
+**mainブランチにpushすると自動で本番デプロイされる**（GitHub連携済み、2026-07-06〜）。
+main以外のブランチをpushするとプレビューデプロイ（お試し用URL）が作られる。
+コードを修正する人は、動作確認をブランチのプレビューで行い、問題なければmainへ反映すればよい。
+
+環境変数（`APP_PASSWORD` / `AUTH_SECRET` など、一覧は `.env.example`）は **Vercel ダッシュボードの
 Project → Settings → Environment Variables に登録済み**（Production・Preview 両方）。
-なので再デプロイは秘密鍵をコマンドに書かず、これだけでOK：
+
+CLIから手動で本番デプロイしたい場合はこれでもOK：
 
 ```bash
 npx vercel deploy --prod --yes
