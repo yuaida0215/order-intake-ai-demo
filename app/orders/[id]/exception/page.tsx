@@ -110,9 +110,15 @@ export default function Page({ params }: { params: { id: string } }) {
   const [heldNote, setHeldNote] = useState(false);
   const [savedNote, setSavedNote] = useState(false);
 
-  // A: 手入力フォーム
-  const [aProductName, setAProductName] = useState("");
-  const [aQuantity, setAQuantity] = useState("");
+  // A: 手入力フォーム (OCR不可の可能性がある全項目を対象にする)
+  const firstItemInit = order?.items[0];
+  const [aProductCode, setAProductCode] = useState(firstItemInit?.productCode ?? "");
+  const [aProductName, setAProductName] = useState(firstItemInit?.productName ?? "");
+  const [aQuantity, setAQuantity] = useState(firstItemInit?.quantity != null ? String(firstItemInit.quantity) : "");
+  const [aUnitPrice, setAUnitPrice] = useState(firstItemInit?.unitPrice != null ? String(firstItemInit.unitPrice) : "");
+  const [aDeliveryAddress, setADeliveryAddress] = useState(order?.deliveryAddress ?? "");
+  const [aDeliveryDate, setADeliveryDate] = useState(order?.requestedDeliveryDate ?? "");
+  const [aValidationMsg, setAValidationMsg] = useState<string | null>(null);
   // B: 希望納品日
   const [bDeliveryDate, setBDeliveryDate] = useState("");
   const [bResolved, setBResolved] = useState(false);
@@ -120,6 +126,7 @@ export default function Page({ params }: { params: { id: string } }) {
   const [dProductCode, setDProductCode] = useState("");
   const [dQuantity, setDQuantity] = useState("");
   const [dResolved, setDResolved] = useState(false);
+  const [dValidationMsg, setDValidationMsg] = useState<string | null>(null);
 
   // ---- NotFound ----
   if (!order) {
@@ -198,15 +205,37 @@ export default function Page({ params }: { params: { id: string } }) {
   // 各カテゴリの右パネルを構築
   // ------------------------------------------------------------
 
-  // A: OCR失敗 — 手入力
+  // A: OCR失敗 — 手入力 (全項目が埋まっているか検証してから確定する)
   const confirmA = () => {
-    if (firstItem) {
-      updateItem(order.id, firstItem.lineNo, {
-        productName: aProductName.trim() || firstItem.productName,
-        quantity: aQuantity.trim() ? Number(aQuantity) : firstItem.quantity,
-      });
+    const productCode = aProductCode.trim() || null;
+    const productName = aProductName.trim() || null;
+    const quantity = aQuantity.trim() ? Number(aQuantity) : null;
+    const unitPrice = aUnitPrice.trim() ? Number(aUnitPrice) : null;
+    const deliveryAddress = aDeliveryAddress.trim() || null;
+    const requestedDeliveryDate = aDeliveryDate || null;
+
+    const missing: string[] = [];
+    if (!productCode) missing.push("商品コード");
+    if (!productName) missing.push("商品名");
+    if (quantity === null || Number.isNaN(quantity)) missing.push("数量");
+    if (unitPrice === null || Number.isNaN(unitPrice)) missing.push("単価");
+    if (!deliveryAddress) missing.push("納品先住所");
+    if (!requestedDeliveryDate) missing.push("希望納品日");
+
+    if (missing.length > 0) {
+      setAValidationMsg(`不足情報があります。以下の項目を入力してください: ${missing.join("・")}`);
+      return;
     }
-    resolveException(order.id);
+    setAValidationMsg(null);
+
+    const amount = quantity !== null && unitPrice !== null ? quantity * unitPrice : null;
+    if (firstItem) {
+      updateItem(order.id, firstItem.lineNo, { productCode, productName, quantity, unitPrice, amount });
+    }
+    const subtotalAmount = amount;
+    const taxAmount = amount !== null ? Math.round(amount * 0.1) : null;
+    const totalAmount = amount !== null && taxAmount !== null ? amount + taxAmount : null;
+    resolveException(order.id, { deliveryAddress, requestedDeliveryDate, subtotalAmount, taxAmount, totalAmount });
     router.push(`/orders/${order.id}/core-system-input`);
   };
 
@@ -216,15 +245,38 @@ export default function Page({ params }: { params: { id: string } }) {
     setBResolved(true);
   };
 
-  // D: バリデーションエラー — 商品コード/数量修正
+  // D: バリデーションエラー — 商品コード/数量修正 (実際にエラーが出ている項目が埋まっているか検証する)
   const confirmD = () => {
-    if (firstItem) {
-      updateItem(order.id, firstItem.lineNo, {
-        productCode: dProductCode.trim() || firstItem.productCode,
-        quantity: dQuantity.trim() ? Number(dQuantity) : firstItem.quantity,
-      });
+    const productCode = dProductCode.trim() || firstItem?.productCode || null;
+    const quantity = dQuantity.trim() ? Number(dQuantity) : firstItem?.quantity ?? null;
+
+    const needsProductCode = order.validationErrors.some((v) => v.fieldKey.includes("productCode")) || order.validationErrors.length === 0;
+    const needsQuantity = order.validationErrors.some((v) => v.fieldKey.includes("quantity"));
+
+    const missing: string[] = [];
+    if (needsProductCode && !productCode) missing.push("商品コード");
+    if (needsQuantity && (quantity === null || Number.isNaN(quantity))) missing.push("数量");
+
+    if (missing.length > 0) {
+      setDValidationMsg(`不足情報があります。以下の項目を入力してください: ${missing.join("・")}`);
+      return;
     }
-    resolveException(order.id);
+    setDValidationMsg(null);
+
+    if (firstItem) {
+      const unitPrice = firstItem.unitPrice;
+      const amount = quantity !== null && unitPrice !== null ? quantity * unitPrice : firstItem.amount;
+      updateItem(order.id, firstItem.lineNo, { productCode, quantity, amount });
+      if (amount !== firstItem.amount) {
+        const taxAmount = amount !== null ? Math.round(amount * 0.1) : null;
+        const totalAmount = amount !== null && taxAmount !== null ? amount + taxAmount : null;
+        resolveException(order.id, { subtotalAmount: amount, taxAmount, totalAmount });
+      } else {
+        resolveException(order.id);
+      }
+    } else {
+      resolveException(order.id);
+    }
     setDResolved(true);
   };
 
@@ -253,9 +305,18 @@ export default function Page({ params }: { params: { id: string } }) {
             ) : (
               <div className="space-y-4 rounded-lg border border-amber-200 bg-amber-50/40 p-4">
                 <p className="text-sm font-semibold text-ink">
-                  原本を見ながら不足項目を入力
+                  原本を見ながら不足項目をすべて入力してください
                 </p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="商品コード">
+                    <input
+                      type="text"
+                      value={aProductCode}
+                      onChange={(e) => setAProductCode(e.target.value)}
+                      placeholder="例）P-1024"
+                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                    />
+                  </Field>
                   <Field label="商品名">
                     <input
                       type="text"
@@ -274,13 +335,42 @@ export default function Page({ params }: { params: { id: string } }) {
                       className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
                     />
                   </Field>
+                  <Field label="単価">
+                    <input
+                      type="number"
+                      value={aUnitPrice}
+                      onChange={(e) => setAUnitPrice(e.target.value)}
+                      placeholder="例）2500"
+                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                    />
+                  </Field>
+                  <Field label="納品先住所">
+                    <input
+                      type="text"
+                      value={aDeliveryAddress}
+                      onChange={(e) => setADeliveryAddress(e.target.value)}
+                      placeholder="例）大阪府大阪市北区1-2-3"
+                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                    />
+                  </Field>
+                  <Field label="希望納品日">
+                    <input
+                      type="date"
+                      value={aDeliveryDate}
+                      onChange={(e) => setADeliveryDate(e.target.value)}
+                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                    />
+                  </Field>
                 </div>
+
+                {aValidationMsg && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    ⚠️ {aValidationMsg}
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-3">
-                  <Button
-                    variant="primary"
-                    onClick={confirmA}
-                    disabled={!aProductName.trim() && !aQuantity.trim()}
-                  >
+                  <Button variant="primary" onClick={confirmA}>
                     確定して基幹システムへ →
                   </Button>
                   <Button
@@ -605,12 +695,15 @@ export default function Page({ params }: { params: { id: string } }) {
                         />
                       </Field>
                     </div>
+
+                    {dValidationMsg && (
+                      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                        ⚠️ {dValidationMsg}
+                      </div>
+                    )}
+
                     <div className="flex gap-3">
-                      <Button
-                        variant="primary"
-                        onClick={confirmD}
-                        disabled={!dProductCode.trim() && !dQuantity.trim()}
-                      >
+                      <Button variant="primary" onClick={confirmD}>
                         確定
                       </Button>
                       <Button
