@@ -296,6 +296,8 @@ export const DRIP_QUEUE: OrderAlert[] = [
     poDocument: {
       poNo: "MK-20260710-02",
       receivedAt: "2026-07-10T09:00:00+09:00",
+      // 実際の発注書PDFを画像として読み取らせるデモ用 (テキストのpreviewLinesはフォールバック用に残す)
+      imageUrl: "/mock-documents/po-nankyushu-foods.svg",
       previewLines: [
         { text: "─────────────  発  注  書  ─────────────", readable: true },
         { text: "発注日：2026年7月10日      発注No：MK-20260710-02", readable: true },

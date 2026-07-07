@@ -30,6 +30,8 @@ export function SourcePreview({ order }: { order: Order }) {
             {p.header ? <div className="mb-2 text-[11px] font-medium text-ink-muted">{p.header}</div> : null}
             <ConversationPreview messages={p.messages ?? []} />
           </div>
+        ) : p?.kind === "scanned_image" ? (
+          <ScannedImagePreview header={p.header} imageDataUrl={p.imageDataUrl} />
         ) : (
           <p className="text-sm text-ink-muted">元データプレビューはありません。</p>
         )}
@@ -116,6 +118,27 @@ function ChatPreview({
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ScannedImagePreview({ header, imageDataUrl }: { header?: string; imageDataUrl?: string }) {
+  return (
+    <div>
+      {header ? <div className="mb-2 text-[11px] text-ink-muted">{header}</div> : null}
+      <div className="flex justify-center rounded-lg border border-gray-300 bg-gray-100 p-4">
+        {imageDataUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageDataUrl}
+            alt="AIが読み取り対象にした添付書類の画像"
+            className="max-h-[640px] w-auto max-w-full rounded-sm bg-white shadow-md"
+          />
+        ) : (
+          <p className="py-10 text-sm text-ink-muted">画像を読み込めませんでした。</p>
+        )}
+      </div>
+      <p className="mt-2 text-[11px] text-ink-muted">※ 添付されたPDF/画像をAIがそのまま読み取ります</p>
     </div>
   );
 }

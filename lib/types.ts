@@ -134,7 +134,7 @@ export type Order = {
 
 /** 元データプレビュー (FAX画像/メール本文/Slack/EDI/会話スレッド) */
 export type SourcePreview = {
-  kind: "fax_image" | "email" | "chat" | "edi" | "conversation";
+  kind: "fax_image" | "email" | "chat" | "edi" | "conversation" | "scanned_image";
   /** メール件名やチャット送信者など */
   header?: string;
   /** 本文テキスト (メール/チャット/EDI) */
@@ -266,6 +266,8 @@ export type PurchaseOrderDoc = {
   poNo: string;
   receivedAt: string;
   previewLines: { text: string; readable: boolean }[];
+  /** 実際の画像として読み取らせたい場合の画像URL (未指定時は previewLines のテキスト表示にフォールバック) */
+  imageUrl?: string;
   extracted: {
     customerName: string | null;
     orderDate: string | null;

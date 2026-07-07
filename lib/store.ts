@@ -289,7 +289,9 @@ function buildOrderFromPoAlert(alert: OrderAlert, seqLabel: string): DemoOrder {
     logs: [
       { timestamp: nowLabel(), actor: "ai", action: "po_detected", message: `発注書 ${po.poNo} を検知し、内容を読み取りました。` },
     ],
-    sourcePreview: { kind: "fax_image", header: `発注書 ${po.poNo}`, faxLines: po.previewLines },
+    sourcePreview: po.imageUrl
+      ? { kind: "scanned_image", header: `発注書 ${po.poNo}`, imageDataUrl: po.imageUrl }
+      : { kind: "fax_image", header: `発注書 ${po.poNo}`, faxLines: po.previewLines },
     sourceMessageId: alert.thread.threadKey,
     threadKey: alert.thread.threadKey,
     alertId: alert.id,

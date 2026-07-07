@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1130" font-family="'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif">
+  <rect x="0" y="0" width="800" height="1130" fill="#ffffff" />
+  <rect x="1" y="1" width="798" height="1128" fill="none" stroke="#d8d8d8" stroke-width="2" />
+
+  <text x="400" y="100" text-anchor="middle" font-size="34" font-weight="700" letter-spacing="8" fill="#1a1a1a">発 注 書</text>
+
+  <text x="60" y="190" font-size="17" font-weight="700" fill="#1a1a1a">株式会社サンプルシステムズ　御中</text>
+
+  <text x="740" y="180" text-anchor="end" font-size="16" font-weight="700" fill="#1a1a1a">南九州フーズ株式会社</text>
+  <text x="740" y="202" text-anchor="end" font-size="13" fill="#333333">〒890-0046</text>
+  <text x="740" y="220" text-anchor="end" font-size="13" fill="#333333">鹿児島県鹿児島市東千石町1-1</text>
+  <text x="740" y="238" text-anchor="end" font-size="13" fill="#333333">TEL: 099-123-4567</text>
+
+  <text x="740" y="272" text-anchor="end" font-size="13" fill="#333333">発注日：2026年7月10日</text>
+  <text x="740" y="292" text-anchor="end" font-size="13" fill="#333333">発注No：MK-20260710-02</text>
+  <text x="740" y="312" text-anchor="end" font-size="13" fill="#333333">希望納品日：2026年7月25日</text>
+
+  <line x1="60" y1="340" x2="740" y2="340" stroke="#1a1a1a" stroke-width="1.5" />
+
+  <text x="60" y="372" font-size="14" fill="#1a1a1a">納品先：鹿児島県鹿児島市山下町3-14</text>
+
+  <line x1="60" y1="430" x2="740" y2="430" stroke="#1a1a1a" stroke-width="1.5" />
+  <text x="70" y="418" font-size="12" fill="#666666">商品コード</text>
+  <text x="200" y="418" font-size="12" fill="#666666">商品名</text>
+  <text x="520" y="418" text-anchor="end" font-size="12" fill="#666666">数量</text>
+  <text x="630" y="418" text-anchor="end" font-size="12" fill="#666666">単価</text>
+  <text x="730" y="418" text-anchor="end" font-size="12" fill="#666666">金額</text>
+
+  <text x="70" y="460" font-size="14" fill="#1a1a1a">DR-051</text>
+  <text x="200" y="460" font-size="14" fill="#1a1a1a">オーガニック青汁 30包</text>
+  <text x="520" y="460" text-anchor="end" font-size="14" fill="#1a1a1a">60ケース</text>
+  <text x="630" y="460" text-anchor="end" font-size="14" fill="#1a1a1a">¥2,800</text>
+  <text x="730" y="460" text-anchor="end" font-size="14" fill="#1a1a1a">¥168,000</text>
+
+  <line x1="60" y1="486" x2="740" y2="486" stroke="#dddddd" stroke-width="1" />
+
+  <line x1="480" y1="560" x2="740" y2="560" stroke="#dddddd" stroke-width="1" />
+  <text x="560" y="552" font-size="14" fill="#333333">小計</text>
+  <text x="730" y="552" text-anchor="end" font-size="14" fill="#1a1a1a">¥168,000</text>
+
+  <text x="560" y="582" font-size="14" fill="#333333">消費税</text>
+  <text x="730" y="582" text-anchor="end" font-size="14" fill="#1a1a1a">¥16,800</text>
+
+  <line x1="480" y1="598" x2="740" y2="598" stroke="#1a1a1a" stroke-width="2" />
+  <text x="560" y="626" font-size="18" font-weight="700" fill="#1a1a1a">合計</text>
+  <text x="730" y="626" text-anchor="end" font-size="18" font-weight="700" fill="#1a1a1a">¥184,800</text>
+
+  <text x="60" y="700" font-size="12" fill="#888888">※本発注書はメールにPDF添付にてお送りしております。ご確認のほどよろしくお願いいたします。</text>
+</svg>
