@@ -125,7 +125,13 @@ function ChatPreview({
 function ScannedImagePreview({ header, imageDataUrl }: { header?: string; imageDataUrl?: string }) {
   return (
     <div>
-      {header ? <div className="mb-2 text-[11px] text-ink-muted">{header}</div> : null}
+      {header ? (
+        <div className="mb-3 space-y-0.5 rounded-lg bg-surface-sunken px-3 py-2 text-[11px] leading-relaxed text-ink-soft">
+          {header.split(" / ").map((h, i) => (
+            <div key={i}>{h}</div>
+          ))}
+        </div>
+      ) : null}
       <div className="flex justify-center rounded-lg border border-gray-300 bg-gray-100 p-4">
         {imageDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
