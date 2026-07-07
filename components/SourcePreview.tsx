@@ -18,7 +18,7 @@ export function SourcePreview({ order }: { order: Order }) {
 
       <div className="p-4">
         {p?.kind === "fax_image" ? (
-          <FaxPreview header={p.header} lines={p.faxLines ?? []} />
+          <FaxPreview header={p.header} lines={p.faxLines ?? []} imageDataUrl={p.imageDataUrl} />
         ) : p?.kind === "email" ? (
           <EmailPreview header={p.header} body={p.body ?? ""} />
         ) : p?.kind === "chat" ? (
@@ -40,7 +40,61 @@ export function SourcePreview({ order }: { order: Order }) {
   );
 }
 
-function FaxPreview({ header, lines }: { header?: string; lines: { text: string; readable: boolean }[] }) {
+function FaxPreview({
+  header,
+  lines,
+  imageDataUrl,
+}: {
+  header?: string;
+  lines: { text: string; readable: boolean }[];
+  imageDataUrl?: string;
+}) {
+  // 実画像がある場合: 受信したFAX画像そのものと、AIが画像から抽出したテキストを並べて表示
+  if (imageDataUrl) {
+    return (
+      <div className="space-y-4">
+        {header ? <div className="text-[11px] text-ink-muted">{header}</div> : null}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* 受信したFAX画像そのもの */}
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold text-ink-muted">受信画像（原本）</p>
+            <div className="flex justify-center rounded-lg border border-gray-300 bg-gray-100 p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageDataUrl}
+                alt="受信したFAX注文書の画像（AIが読み取り対象にした原本）"
+                className="max-h-[520px] w-auto max-w-full rounded-sm bg-white shadow-md"
+              />
+            </div>
+          </div>
+          {/* AIが画像から抽出したテキスト */}
+          <div>
+            <p className="mb-1.5 text-[11px] font-semibold text-ink-muted">✨ AIが画像から読み取った内容</p>
+            <div className="rounded-lg border border-gray-300 bg-[repeating-linear-gradient(0deg,#fafafa,#fafafa_22px,#f0f0f0_23px)] p-4 font-mono text-[13px] leading-6 text-gray-800 shadow-inner">
+              {lines.map((l, i) =>
+                l.readable ? (
+                  <div key={i} className="whitespace-pre-wrap">{l.text}</div>
+                ) : (
+                  <div
+                    key={i}
+                    className="whitespace-pre-wrap rounded bg-yellow-100/80 px-1 text-gray-500"
+                    title="AIが確定できなかった箇所"
+                  >
+                    {l.text}
+                    <span className="ml-2 rounded bg-red-100 px-1 text-[10px] font-sans font-medium text-red-600">要確認</span>
+                  </div>
+                ),
+              )}
+            </div>
+          </div>
+        </div>
+        <p className="text-[11px] text-ink-muted">
+          ※ 受信したFAX画像をAIがそのまま読み取ってテキスト化しました。黄色ハイライト部分は内容が確定できず確認が必要な箇所です。
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       {header ? <div className="mb-2 text-[11px] text-ink-muted">{header}</div> : null}

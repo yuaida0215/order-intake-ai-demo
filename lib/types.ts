@@ -141,7 +141,7 @@ export type SourcePreview = {
   body?: string;
   /** FAX画像の擬似行 (読み取り可否付き) */
   faxLines?: { text: string; readable: boolean }[];
-  /** 添付画像 (LINEスクショ等) の data URL — chat系プレビューで表示 */
+  /** 添付画像 (LINEスクショ等) の data URL — chat系プレビューで表示。fax_image では実写真を表示し faxLines をAI読み取り結果として併記 */
   imageDataUrl?: string;
   /** 会話ラリー (kind="conversation" のとき使用) */
   messages?: ThreadMessage[];

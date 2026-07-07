@@ -514,7 +514,11 @@ export default function Page({ params }: { params: { id: string } }) {
         return (
           <div className="space-y-4">
             <NoticeBlock>
-              受注書に希望納品日と納品先住所が記載されていません。相手先に情報補填を依頼する必要があります。AIが確認依頼文面を作成しました。
+              {order.missingFields.length > 0
+                ? `受注書について、${order.missingFields
+                    .map((m) => m.fieldLabel)
+                    .join("・")}の確認が必要です。相手先に確認・補填を依頼する必要があります。AIが確認依頼文面を作成しました。`
+                : "相手先に確認・補填を依頼する必要があります。AIが確認依頼文面を作成しました。"}
             </NoticeBlock>
 
             <div className="rounded-lg border border-brand-200 bg-white p-4">

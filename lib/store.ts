@@ -144,11 +144,26 @@ type Actions = {
 };
 
 // C案件の返信文面バリエーション (再生成デモ用)
-const DRAFT_VARIANTS = [
-  "ご注文内容を確認したところ、希望納品日と納品先住所が未記載でした。お手数ですが、上記2点を追記のうえ再送いただけますでしょうか。",
-  "いつもお世話になっております。ご注文を承りましたが、希望納品日と納品先住所の記載が見当たりませんでした。恐れ入りますが、下記2点をご共有いただけますと幸いです。\n・希望納品日\n・納品先住所\nご確認のほど、よろしくお願いいたします。",
-  "ご発注ありがとうございます。手配を進めるにあたり、希望納品日・納品先住所の2点が未記載となっておりました。ご多忙のところ恐縮ですが、ご返信いただけますようお願い申し上げます。",
+// 案件ごとに不足内容が異なるため、文面セットを複数用意し、現在の文面が属するセット内で循環させる。
+const DRAFT_VARIANT_SETS: string[][] = [
+  // 希望納品日・納品先住所が未記載のケース (ORD-004 等)
+  [
+    "ご注文内容を確認したところ、希望納品日と納品先住所が未記載でした。お手数ですが、上記2点を追記のうえ再送いただけますでしょうか。",
+    "いつもお世話になっております。ご注文を承りましたが、希望納品日と納品先住所の記載が見当たりませんでした。恐れ入りますが、下記2点をご共有いただけますと幸いです。\n・希望納品日\n・納品先住所\nご確認のほど、よろしくお願いいたします。",
+    "ご発注ありがとうございます。手配を進めるにあたり、希望納品日・納品先住所の2点が未記載となっておりました。ご多忙のところ恐縮ですが、ご返信いただけますようお願い申し上げます。",
+  ],
+  // 決済方法の矛盾・振込予定日が不明瞭なケース (ORD-002 手書きFAX)
+  [
+    "尾崎 太郎 様\n\nこの度はご注文をいただき誠にありがとうございます。ご注文書を拝見したところ、下記2点についてご確認をお願いしたく存じます。\n・決済方法：「銀行振込」と「代金引換」の両方にご記入がございました。恐れ入りますが、いずれか一方をご指定ください。\n・お振込予定日：具体的な日付のご記入をお願いいたします。\n\nお手数をおかけしますが、ご返信いただけますようお願い申し上げます。",
+    "尾崎 太郎 様\n\nご注文ありがとうございます。ご記入内容のうち、決済方法が「銀行振込」「代金引換」の両方にチェックされておりました。誠に恐れ入りますが、いずれか一方をお選びのうえ、お振込予定日（具体的な年月日）とあわせてご返信いただけますでしょうか。何卒よろしくお願い申し上げます。",
+    "尾崎 太郎 様\n\n平素より大変お世話になっております。ご注文書につきまして、決済方法（銀行振込／代金引換のいずれか）と、お振込予定日の2点が確定できませんでした。お手数ですが、ご確認のうえご返信くださいますようお願いいたします。",
+  ],
 ];
+
+/** 現在の文面が属するセットを返す (見つからなければ先頭セット) */
+function draftVariantSetFor(body: string): string[] {
+  return DRAFT_VARIANT_SETS.find((set) => set.includes(body)) ?? DRAFT_VARIANT_SETS[0];
+}
 
 /** アラートの会話/prefilledOrderから、伏せ状態(new/isRead=false)のDemoOrderを組み立てる */
 function buildOrderFromAlert(alert: OrderAlert, seqLabel: string): DemoOrder {
@@ -386,8 +401,9 @@ export const useOrderStore = create<State & Actions>((set, get) => ({
   regenerateDraft: (id) =>
     get().patch(id, (o) => {
       if (!o.draftReply) return;
-      const idx = DRAFT_VARIANTS.indexOf(o.draftReply.body);
-      const next = DRAFT_VARIANTS[(idx + 1) % DRAFT_VARIANTS.length];
+      const variants = draftVariantSetFor(o.draftReply.body);
+      const idx = variants.indexOf(o.draftReply.body);
+      const next = variants[(idx + 1) % variants.length];
       o.draftReply.body = next;
       o.logs = [
         ...(o.logs ?? []),
