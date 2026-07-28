@@ -257,7 +257,7 @@ export async function ingestMessages(
   }
 
   const response = (await client.messages.create({
-    model: "claude-opus-4-8",
+    model: "claude-opus-5",
     max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: contentBlocks }],
