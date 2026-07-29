@@ -10,9 +10,10 @@ import {
   orderCategory,
 } from "@/lib/format";
 import type { AlertClassification, AssigneeType, ExceptionType, OrderChannel, OrderStatus } from "@/lib/types";
+import { Icon } from "@/components/icons";
 
 const chipBase =
-  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap";
+  "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[13px] font-medium whitespace-nowrap";
 
 export function StatusBadge({ status, animated }: { status: OrderStatus; animated?: boolean }) {
   const s = STATUS_STYLE[status];
@@ -38,11 +39,11 @@ export function ChannelBadge({ channel }: { channel: OrderChannel }) {
 }
 
 const CATEGORY_STYLE: Record<string, string> = {
-  normal: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  A: "bg-red-50 text-red-700 border-red-200",
-  B: "bg-amber-50 text-amber-700 border-amber-200",
-  C: "bg-red-50 text-red-700 border-red-200",
-  D: "bg-amber-50 text-amber-700 border-amber-200",
+  normal: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30",
+  A: "bg-rose-500/12 text-rose-300 border-rose-500/30",
+  B: "bg-amber-500/12 text-amber-300 border-amber-500/30",
+  C: "bg-rose-500/12 text-rose-300 border-rose-500/30",
+  D: "bg-amber-500/12 text-amber-300 border-amber-500/30",
 };
 
 export function CategoryBadge({ exceptionType }: { exceptionType: ExceptionType }) {
@@ -51,44 +52,63 @@ export function CategoryBadge({ exceptionType }: { exceptionType: ExceptionType 
 }
 
 export function ConfidenceBadge({ score }: { score: number }) {
-  // 高信頼度はエージェントの紫グラデーションで誇らしげに
+  // §8-4: 95%以上=成功 / 85-94%=注意 / 84%以下=要確認 (グラデは使わない)
+  const color =
+    score >= 0.95
+      ? "bg-emerald-500/12 text-emerald-300 border-emerald-500/30"
+      : score >= 0.85
+        ? "bg-amber-500/12 text-amber-300 border-amber-500/30"
+        : "bg-rose-500/12 text-rose-300 border-rose-500/30";
+  return (
+    <span className={`${chipBase} ${color}`}>
+      全体信頼度 {confidencePct(score)}
+    </span>
+  );
+}
+
+/** 項目単位の信頼度 (§8-4)。低信頼度のみ強調し、高信頼度は控えめに */
+export function FieldConfidence({ score }: { score: number }) {
+  const pct = confidencePct(score);
+  if (score >= 0.95) {
+    return <span className="text-[11px] tabular-nums text-ink-faint">{pct}</span>;
+  }
   if (score >= 0.85) {
     return (
-      <span className={`${chipBase} ai-gradient border-transparent text-white shadow-glow-sm`}>
-        ✨ 信頼度 {confidencePct(score)}
+      <span className="inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-amber-300">
+        {pct}
       </span>
     );
   }
-  const color =
-    score >= 0.5
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : "bg-red-50 text-red-700 border-red-200";
-  return <span className={`${chipBase} ${color}`}>信頼度 {confidencePct(score)}</span>;
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/12 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-rose-300">
+      {pct} 要確認
+    </span>
+  );
 }
 
 export function AlertClassificationBadge({ classification }: { classification: AlertClassification }) {
   if (classification === "confirmed_order") {
     return (
-      <span className={`${chipBase} border-red-200 bg-red-50 text-red-700`}>
+      <span className={`${chipBase} border-rose-500/30 bg-rose-500/12 text-rose-300`}>
         🔴 受注確定発言あり
       </span>
     );
   }
   return (
-    <span className={`${chipBase} border-amber-200 bg-amber-50 text-amber-700`}>
+    <span className={`${chipBase} border-amber-500/30 bg-amber-500/12 text-amber-300`}>
       🟡 受注の可能性あり
     </span>
   );
 }
 
-/** AIエージェントのアバター (グラデーション+グロー)。size は tailwind の h/w クラス */
+/** AIエージェントのアバター (コバルトグラデーション+グロー)。size は tailwind の h/w クラス */
 export function AgentAvatar({ size = "h-9 w-9", pulse = false, className = "" }: { size?: string; pulse?: boolean; className?: string }) {
   return (
     <span
       className={`ai-gradient inline-flex items-center justify-center rounded-xl text-white shadow-glow-sm ${pulse ? "animate-glow-pulse" : ""} ${size} ${className}`}
       aria-hidden
     >
-      🤖
+      <Icon name="sparkles" className="h-1/2 w-1/2" strokeWidth={2} />
     </span>
   );
 }

@@ -188,6 +188,8 @@ export type OrderAlert = {
   archivedReason: string | null;
   /** kind="purchase_order_received" のときの発注書本体 */
   poDocument: PurchaseOrderDoc | null;
+  /** AIが「受注意思」を検出した会話メッセージのID。会話プレビューで強調表示する。 */
+  detectedMessageIds?: string[];
   /** AIが会話から事前抽出した受注内容 (accept時にOrderへ転写する「隠し正解」) */
   prefilledOrder?: {
     customerName: string | null;

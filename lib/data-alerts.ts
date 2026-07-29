@@ -23,6 +23,7 @@ export const INITIAL_ALERTS: OrderAlert[] = [
     archivedAt: null,
     archivedReason: null,
     poDocument: null,
+    detectedMessageIds: ["msg-30289", "msg-30291"],
     thread: {
       threadKey: "chatwork:room-4821:msg-30291",
       channel: "chatwork",
@@ -30,6 +31,48 @@ export const INITIAL_ALERTS: OrderAlert[] = [
       participants: ["山田様", "自社担当"],
       lastMessageAt: "2026-07-06T09:18:00+09:00",
       messages: [
+        {
+          messageId: "msg-30281",
+          senderName: "山田様",
+          role: "customer",
+          sentAt: "2026-07-02T14:20:00+09:00",
+          text: "お世話になっております。先日いただいた健康ドリンクの新商品カタログ、拝見しました。",
+        },
+        {
+          messageId: "msg-30282",
+          senderName: "自社担当",
+          role: "self",
+          sentAt: "2026-07-02T15:02:00+09:00",
+          text: "ありがとうございます。A-102（プレミアム健康ドリンク 24本入）が特に人気です。よろしければサンプルもお送りします。",
+        },
+        {
+          messageId: "msg-30283",
+          senderName: "山田様",
+          role: "customer",
+          sentAt: "2026-07-03T10:41:00+09:00",
+          text: "サンプルありがとうございました。社内で試したところ好評でした。",
+        },
+        {
+          messageId: "msg-30284",
+          senderName: "自社担当",
+          role: "self",
+          sentAt: "2026-07-04T09:12:00+09:00",
+          text: "それは何よりです。ご検討状況はいかがでしょうか。ロットや価格もご案内できます。",
+        },
+        {
+          messageId: "msg-30285",
+          senderName: "山田様",
+          role: "customer",
+          sentAt: "2026-07-05T17:30:00+09:00",
+          text: "ありがとうございます。前向きに検討しています。近いうちにご連絡します。",
+        },
+        {
+          messageId: "msg-30288",
+          senderName: "山田様",
+          role: "customer",
+          sentAt: "2026-07-06T09:02:00+09:00",
+          text: "おはようございます。そろそろ正式に発注したいと考えています。",
+        },
         {
           messageId: "msg-30289",
           senderName: "山田様",
@@ -90,6 +133,7 @@ export const INITIAL_ALERTS: OrderAlert[] = [
     archivedAt: null,
     archivedReason: null,
     poDocument: null,
+    detectedMessageIds: ["1720227900"],
     thread: {
       threadKey: "slack:C0192-suzuki:1720227900",
       channel: "slack",
@@ -97,6 +141,34 @@ export const INITIAL_ALERTS: OrderAlert[] = [
       participants: ["鈴木様", "自社担当"],
       lastMessageAt: "2026-07-06T10:03:00+09:00",
       messages: [
+        {
+          messageId: "1720220100",
+          senderName: "鈴木様",
+          role: "customer",
+          sentAt: "2026-07-02T11:00:00+09:00",
+          text: "先日は展示会でお世話になりました。冷凍うどんセット、気になっています。",
+        },
+        {
+          messageId: "1720220200",
+          senderName: "自社担当",
+          role: "self",
+          sentAt: "2026-07-02T11:32:00+09:00",
+          text: "こちらこそありがとうございました。店舗でのお取り扱いもぜひご検討ください。",
+        },
+        {
+          messageId: "1720220300",
+          senderName: "鈴木様",
+          role: "customer",
+          sentAt: "2026-07-04T09:20:00+09:00",
+          text: "はい、店頭で扱えたらと考えています。まずは条件を教えてください。",
+        },
+        {
+          messageId: "1720220400",
+          senderName: "自社担当",
+          role: "self",
+          sentAt: "2026-07-05T18:10:00+09:00",
+          text: "承知しました。ロット・価格をまとめてご案内します。",
+        },
         {
           messageId: "1720227700",
           senderName: "鈴木様",
@@ -165,6 +237,7 @@ export const DRIP_QUEUE: OrderAlert[] = [
     archivedAt: null,
     archivedReason: null,
     poDocument: null,
+    detectedMessageIds: ["m1", "m3"],
     thread: {
       threadKey: "email_body:thread-9931:m3",
       channel: "email_body",
@@ -231,6 +304,7 @@ export const DRIP_QUEUE: OrderAlert[] = [
     archivedAt: null,
     archivedReason: null,
     poDocument: null,
+    detectedMessageIds: ["msg-11040"],
     thread: {
       threadKey: "chatwork:room-5502:msg-11042",
       channel: "chatwork",

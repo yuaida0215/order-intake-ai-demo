@@ -11,14 +11,14 @@ export function WatchBanner() {
 
   return (
     <div className="ai-border rounded-2xl">
-      <div className="flex flex-wrap items-center gap-4 rounded-[15px] bg-white px-5 py-4">
+      <div className="flex flex-wrap items-center gap-4 rounded-[15px] bg-surface px-5 py-4">
         <AgentAvatar size="h-10 w-10" pulse={watchEnabled} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold gradient-text">AI会話監視モニター</span>
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                watchEnabled ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
+                watchEnabled ? "bg-emerald-500/10 text-emerald-300" : "bg-white/[0.05] text-ink-muted"
               }`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${watchEnabled ? "animate-pulse-soft bg-emerald-500" : "bg-gray-400"}`} />

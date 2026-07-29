@@ -10,13 +10,44 @@ import {
   buildApprovalDraftMessage,
   detectInvoiceMissingFields,
 } from "@/lib/core";
-import { yen } from "@/lib/format";
-import { Button, Card, LinkButton, SectionTitle } from "@/components/ui";
-import { AgentAvatar } from "@/components/badges";
+import { formatDate, yen } from "@/lib/format";
+import { Button, Card, Field, LinkButton, PageHeader, SectionTitle } from "@/components/ui";
+import { AgentAvatar, StatusBadge } from "@/components/badges";
+import { AIProcessingSteps } from "@/components/ai";
+import { Icon } from "@/components/icons";
 import { InvoiceSheet } from "@/components/InvoiceSheet";
 import { MissingFieldsPanel } from "@/components/MissingFieldsPanel";
+import { ISSUER } from "@/lib/issuer";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** 右パネル用の小さなステータスピル */
+function StatusPill({
+  tone,
+  icon,
+  children,
+}: {
+  tone: "brand" | "emerald" | "amber" | "info" | "rose" | "muted";
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const styles: Record<string, string> = {
+    brand: "border-brand-500/30 bg-brand-500/12 text-brand-300",
+    emerald: "border-emerald-500/30 bg-emerald-500/12 text-emerald-300",
+    amber: "border-amber-500/30 bg-amber-500/12 text-amber-300",
+    info: "border-info-500/30 bg-info-500/12 text-info-300",
+    rose: "border-rose-500/30 bg-rose-500/12 text-rose-300",
+    muted: "border-line bg-surface-sunken text-ink-muted",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[13px] font-medium ${styles[tone]}`}
+    >
+      {icon}
+      {children}
+    </span>
+  );
+}
 
 export default function InvoicePage({ params }: { params: { id: string } }) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === params.id));
@@ -32,6 +63,7 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
   const [showApprovalForm, setShowApprovalForm] = useState(false);
   const [note, setNote] = useState("");
   const [variantIndex, setVariantIndex] = useState(0);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -69,6 +101,7 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
   const isSent = invoice?.status === "sent_mock";
   const isApprovalRequested = invoice?.status === "approval_requested";
   const missingFields = invoice ? detectInvoiceMissingFields(invoice) : [];
+  const approval = order.approval;
 
   function draftMessage(idx: number): string {
     return buildApprovalDraftMessage(
@@ -95,47 +128,48 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
     setNote(draftMessage(nextIndex));
   }
 
+  function saveDraft() {
+    if (!invoice) return;
+    addLog(order!.id, "internal_user", "invoice_draft_saved", `請求書 ${invoice.invoiceNo} を下書き保存しました。`);
+    setSavedAt(new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" }));
+  }
+
+  const sendToEmail = order.customerContactAddress || "keiri@example-torihiki.co.jp";
+
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/orders/${order.id}/read`} className="text-sm text-ink-muted hover:text-ink">
-          ← 読み取り結果に戻る
-        </Link>
-        <h1 className="mt-2 text-xl font-bold text-ink">請求書作成</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          AIが受注内容から請求書を自動生成します。内容は送付前に編集できます。
-          <span className="ml-1 font-mono text-ink-faint">{order.id}</span>
-        </p>
-      </div>
+      <PageHeader
+        title="請求書作成"
+        description="AIが受注内容から請求書を自動生成しました。内容を確認し、送付前に編集できます。"
+        backHref={`/orders/${order.id}/read`}
+        backLabel="読み取り結果に戻る"
+        meta={
+          <>
+            <span className="font-mono text-[13px] text-ink-faint">{order.id}</span>
+            <StatusBadge status={order.status} />
+          </>
+        }
+      />
 
       {!invoice ? (
         <Card>
-          <div className="flex flex-col items-center gap-5 py-10 text-center">
-            <AgentAvatar size="h-12 w-12" pulse className="text-xl" />
-            <p className="text-sm text-ink-muted">AI Agentが請求書を生成しています…</p>
-            <ol className="space-y-2 text-left">
-              {INVOICE_GENERATE_STEPS.map((label, i) => {
-                const done = i < stepIndex;
-                const active = generating && i === stepIndex;
-                return (
-                  <li key={label} className="flex items-center gap-2.5 text-sm">
-                    {done ? (
-                      <span className="ai-gradient flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white">✓</span>
-                    ) : active ? (
-                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
-                    ) : (
-                      <span className="h-2 w-2 rounded-full bg-surface-border" />
-                    )}
-                    <span className={done ? "text-ink-soft" : active ? "font-medium text-ink" : "text-ink-faint"}>{label}</span>
-                  </li>
-                );
-              })}
-            </ol>
+          <div className="mx-auto flex max-w-md flex-col gap-5 py-6">
+            <div className="flex items-center gap-3.5">
+              <AgentAvatar size="h-11 w-11" pulse className="text-xl" />
+              <div>
+                <div className="text-base font-semibold text-ink">AI Agentが請求書を生成しています</div>
+                <p className="mt-0.5 text-[13px] text-ink-muted">
+                  受注内容から請求項目・消費税・振込先を組み立てています…
+                </p>
+              </div>
+            </div>
+            <AIProcessingSteps steps={INVOICE_GENERATE_STEPS} current={stepIndex} running={generating} />
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
+          {/* LEFT / CENTER: 白い請求書 */}
+          <div className="min-w-0 flex-1 space-y-4">
             {isDraft && (
               <MissingFieldsPanel
                 missingFields={missingFields}
@@ -155,35 +189,119 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
             />
           </div>
 
-          <div className="space-y-4">
+          {/* RIGHT: 340px パネル */}
+          <div className="w-full flex-none space-y-4 xl:sticky xl:top-6 xl:w-[340px]">
+            {/* ステータス */}
             <Card>
-              <SectionTitle sub="請求書のステータスと操作">操作パネル</SectionTitle>
+              <SectionTitle sub="請求書の状態">ステータス</SectionTitle>
+              <div className="flex flex-wrap gap-2">
+                <StatusPill tone="brand" icon={<Icon name="sparkles" className="h-3.5 w-3.5" strokeWidth={2} />}>
+                  AI作成済み
+                </StatusPill>
+                {isSent ? (
+                  <StatusPill tone="emerald" icon={<Icon name="checkCircle" className="h-3.5 w-3.5" />}>
+                    送付済み
+                  </StatusPill>
+                ) : (
+                  <StatusPill tone="amber" icon={<Icon name="clock" className="h-3.5 w-3.5" />}>
+                    未送付
+                  </StatusPill>
+                )}
+                {approval?.status === "approved" ? (
+                  <StatusPill tone="emerald" icon={<Icon name="userCheck" className="h-3.5 w-3.5" />}>
+                    承認済み
+                  </StatusPill>
+                ) : approval?.status === "remanded" ? (
+                  <StatusPill tone="rose" icon={<Icon name="alertTriangle" className="h-3.5 w-3.5" />}>
+                    差し戻し
+                  </StatusPill>
+                ) : isApprovalRequested || approval?.status === "waiting" ? (
+                  <StatusPill tone="info" icon={<Icon name="userCheck" className="h-3.5 w-3.5" />}>
+                    上長確認中
+                  </StatusPill>
+                ) : (
+                  <StatusPill tone="muted">承認不要</StatusPill>
+                )}
+              </div>
+            </Card>
+
+            {/* AI確認結果 */}
+            <Card>
+              <SectionTitle sub="AIが送付前に自動チェックしました">AI確認結果</SectionTitle>
+              <ul className="space-y-2.5">
+                {["金額一致", "税率一致", "振込先確認済み", "送付先確認済み"].map((label) => (
+                  <li key={label} className="flex items-center gap-2.5 text-sm text-ink-soft">
+                    <Icon name="checkCircle" className="h-4 w-4 flex-none text-emerald-400" strokeWidth={2} />
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            {/* 送付情報 */}
+            <Card>
+              <SectionTitle sub="送付内容のプレビュー">送付情報</SectionTitle>
+              <div className="space-y-3">
+                <Field label="送付先メール">{sendToEmail}</Field>
+                <Field label="件名">請求書送付のご案内（{invoice.invoiceNo}）</Field>
+                <Field label="添付ファイル">{invoice.invoiceNo}.pdf</Field>
+                <Field label="差出人">{ISSUER.companyName}</Field>
+                <Field label="送付予定">{isSent ? `送付済み（${invoice.sentAt ?? "モック"}）` : "承認後すぐに送付"}</Field>
+              </div>
+            </Card>
+
+            {/* 承認情報 */}
+            {approval && (
+              <Card>
+                <SectionTitle sub="上長への確認依頼">承認情報</SectionTitle>
+                <div className="space-y-3">
+                  <Field label="承認者">{approval.approverName}</Field>
+                  <Field label="依頼日時">{approval.requestedOnDemoDate}</Field>
+                  {approval.requesterNote && <Field label="依頼コメント">{approval.requesterNote}</Field>}
+                  {approval.decisionComment && <Field label="承認者コメント">{approval.decisionComment}</Field>}
+                </div>
+              </Card>
+            )}
+
+            {/* 次のアクション */}
+            <Card>
+              <SectionTitle sub="請求書の送付・確認依頼">次のアクション</SectionTitle>
 
               {isSent && (
-                <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
-                  ✓ 先方に送付済みです（{invoice.sentAt}・モック）
+                <div className="mb-3 flex items-start gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-300">
+                  <Icon name="checkCircle" className="mt-0.5 h-4 w-4 flex-none" strokeWidth={2} />
+                  <span>先方に送付済みです（{invoice.sentAt}・モック）</span>
                 </div>
               )}
               {isApprovalRequested && (
-                <div className="mt-3 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2.5 text-sm text-purple-800">
-                  👤 上長の確認待ちです。
-                  <Link href="/approvals" className="ml-1 font-semibold underline hover:no-underline">
-                    承認状況を見る
-                  </Link>
+                <div className="mb-3 flex items-start gap-2 rounded-lg border border-info-500/25 bg-info-500/10 px-3 py-2.5 text-sm text-info-300">
+                  <Icon name="userCheck" className="mt-0.5 h-4 w-4 flex-none" strokeWidth={2} />
+                  <span>
+                    上長の確認待ちです。
+                    <Link href="/approvals" className="ml-1 font-semibold underline hover:no-underline">
+                      承認状況を見る
+                    </Link>
+                  </span>
                 </div>
               )}
 
               {isDraft && (
-                <div className="mt-3 space-y-2">
+                <div className="space-y-2">
                   <Button variant="primary" className="w-full" onClick={() => sendInvoice(order.id)}>
-                    📤 先方に送付
+                    <Icon name="mailAlert" className="h-4 w-4" />
+                    先方に送付
                   </Button>
                   <Button
                     variant="secondary"
                     className="w-full"
                     onClick={() => (showApprovalForm ? setShowApprovalForm(false) : openApprovalForm())}
                   >
-                    👤 上長に確認依頼
+                    <Icon name="userCheck" className="h-4 w-4" />
+                    上長に確認依頼
+                  </Button>
+                  <Button variant="ghost" className="w-full" onClick={saveDraft}>
+                    <Icon name="fileText" className="h-4 w-4" />
+                    {savedAt ? `下書き保存しました（${savedAt}）` : "下書き保存"}
                   </Button>
                 </div>
               )}
@@ -196,9 +314,10 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
                       <button
                         type="button"
                         onClick={regenerateDraft}
-                        className="text-xs font-medium text-brand-600 hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-300 hover:underline"
                       >
-                        ✨ 再生成
+                        <Icon name="sparkles" className="h-3 w-3" strokeWidth={2} />
+                        再生成
                       </button>
                     )}
                   </div>
@@ -206,7 +325,7 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     rows={5}
-                    className="w-full resize-y rounded-md border border-surface-border bg-white px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                    className="w-full resize-y rounded-md border border-surface-border bg-white/[0.05] px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/40"
                   />
                   <div className="flex gap-2">
                     <Button
@@ -225,11 +344,16 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
                   </div>
                 </div>
               )}
-            </Card>
 
-            <LinkButton href={`/orders/${order.id}/read`} variant="secondary" className="w-full">
-              読み取り結果に戻る
-            </LinkButton>
+              <LinkButton
+                href={`/orders/${order.id}/read`}
+                variant="ghost"
+                size="sm"
+                className="mt-3 w-full"
+              >
+                読み取り結果に戻る
+              </LinkButton>
+            </Card>
           </div>
         </div>
       )}

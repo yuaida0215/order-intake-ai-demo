@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/store";
 import {
@@ -11,6 +10,7 @@ import {
   LinkButton,
   Field,
   Empty,
+  PageHeader,
 } from "@/components/ui";
 import {
   StatusBadge,
@@ -30,6 +30,10 @@ import {
 } from "@/lib/format";
 import type { DemoOrder } from "@/lib/types";
 
+// 入力欄の共通クラス（h-11 / bg-surface-input / focus:border-brand-500）
+const INPUT_CLS =
+  "h-11 w-full rounded-md border border-surface-border bg-surface-input px-3 text-sm text-ink outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25";
+
 // ------------------------------------------------------------
 // 小さな共通サブコンポーネント（このファイル内限定）
 // ------------------------------------------------------------
@@ -38,21 +42,21 @@ import type { DemoOrder } from "@/lib/types";
 function OwnerBanner({ owner }: { owner: "internal" | "customer" }) {
   if (owner === "customer") {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+      <div className="flex items-center gap-2 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2">
         <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-        <span className="text-sm font-semibold text-red-700">
+        <span className="text-sm font-semibold text-rose-300">
           相手先へ依頼
         </span>
-        <span className="text-xs text-red-500">
+        <span className="text-xs text-rose-400">
           相手先からの返信が必要です
         </span>
       </div>
     );
   }
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+    <div className="flex items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2">
       <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
-      <span className="text-sm font-semibold text-amber-700">自社で対応</span>
+      <span className="text-sm font-semibold text-amber-300">自社で対応</span>
       <span className="text-xs text-amber-500">
         担当者による確認・入力が必要です
       </span>
@@ -79,7 +83,7 @@ function InlineNote({
 }) {
   const cls =
     tone === "success"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
       : "border-surface-border bg-surface-sunken text-ink-soft";
   return (
     <div className={`rounded-lg border px-3 py-2 text-sm ${cls}`}>
@@ -171,7 +175,7 @@ export default function Page({ params }: { params: { id: string } }) {
         <Card>
           <div className="flex flex-col items-start gap-4 py-6">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
                 ✓
               </span>
               <h2 className="text-lg font-bold text-ink">
@@ -303,7 +307,7 @@ export default function Page({ params }: { params: { id: string } }) {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4 rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+              <div className="space-y-4 rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
                 <p className="text-sm font-semibold text-ink">
                   原本を見ながら不足項目をすべて入力してください
                 </p>
@@ -314,7 +318,7 @@ export default function Page({ params }: { params: { id: string } }) {
                       value={aProductCode}
                       onChange={(e) => setAProductCode(e.target.value)}
                       placeholder="例）P-1024"
-                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      className={INPUT_CLS}
                     />
                   </Field>
                   <Field label="商品名">
@@ -323,7 +327,7 @@ export default function Page({ params }: { params: { id: string } }) {
                       value={aProductName}
                       onChange={(e) => setAProductName(e.target.value)}
                       placeholder="例）ステンレスボトル 500ml"
-                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      className={INPUT_CLS}
                     />
                   </Field>
                   <Field label="数量">
@@ -332,7 +336,7 @@ export default function Page({ params }: { params: { id: string } }) {
                       value={aQuantity}
                       onChange={(e) => setAQuantity(e.target.value)}
                       placeholder="例）120"
-                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      className={`${INPUT_CLS} tabular-nums`}
                     />
                   </Field>
                   <Field label="単価">
@@ -341,7 +345,7 @@ export default function Page({ params }: { params: { id: string } }) {
                       value={aUnitPrice}
                       onChange={(e) => setAUnitPrice(e.target.value)}
                       placeholder="例）2500"
-                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      className={`${INPUT_CLS} tabular-nums`}
                     />
                   </Field>
                   <Field label="納品先住所">
@@ -350,7 +354,7 @@ export default function Page({ params }: { params: { id: string } }) {
                       value={aDeliveryAddress}
                       onChange={(e) => setADeliveryAddress(e.target.value)}
                       placeholder="例）大阪府大阪市北区1-2-3"
-                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      className={INPUT_CLS}
                     />
                   </Field>
                   <Field label="希望納品日">
@@ -358,13 +362,13 @@ export default function Page({ params }: { params: { id: string } }) {
                       type="date"
                       value={aDeliveryDate}
                       onChange={(e) => setADeliveryDate(e.target.value)}
-                      className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                      className={`${INPUT_CLS} tabular-nums`}
                     />
                   </Field>
                 </div>
 
                 {aValidationMsg && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <div className="rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
                     ⚠️ {aValidationMsg}
                   </div>
                 )}
@@ -435,14 +439,14 @@ export default function Page({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+            <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
               <Field label="希望納品日" missing={!bResolved}>
                 {bResolved ? (
-                  <span className="text-sm font-semibold text-emerald-700 tabular-nums">
+                  <span className="text-sm font-semibold text-emerald-300 tabular-nums">
                     {formatDate(order.requestedDeliveryDate)}（入力済み）
                   </span>
                 ) : (
-                  <span className="text-sm text-red-500">
+                  <span className="text-sm text-rose-400">
                     未入力（要入力）
                   </span>
                 )}
@@ -465,7 +469,7 @@ export default function Page({ params }: { params: { id: string } }) {
                     type="date"
                     value={bDeliveryDate}
                     onChange={(e) => setBDeliveryDate(e.target.value)}
-                    className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600 sm:w-56"
+                    className={`${INPUT_CLS} tabular-nums sm:w-56`}
                   />
                   <div className="flex gap-3">
                     <Button
@@ -521,10 +525,10 @@ export default function Page({ params }: { params: { id: string } }) {
                 : "相手先に確認・補填を依頼する必要があります。AIが確認依頼文面を作成しました。"}
             </NoticeBlock>
 
-            <div className="rounded-lg border border-brand-200 bg-white p-4">
-              <div className="-mx-4 -mt-4 mb-4 flex items-center gap-2 rounded-t-lg bg-brand-50/50 px-4 py-2.5">
+            <div className="rounded-lg border border-brand-500/25 bg-surface p-4">
+              <div className="-mx-4 -mt-4 mb-4 flex items-center gap-2 rounded-t-lg bg-brand-500/10 px-4 py-2.5">
                 <AgentAvatar size="h-6 w-6" className="text-xs" />
-                <span className="text-xs font-semibold text-brand-700">
+                <span className="text-xs font-semibold text-brand-300">
                   AIが自動生成した確認依頼文面
                 </span>
               </div>
@@ -559,9 +563,9 @@ export default function Page({ params }: { params: { id: string } }) {
 
                   {alreadySent ? (
                     <>
-                      <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-                        <span className="mt-0.5 text-emerald-600">✓</span>
-                        <p className="text-sm font-medium text-emerald-700">
+                      <div className="flex items-start gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-4 py-3">
+                        <span className="mt-0.5 text-emerald-300">✓</span>
+                        <p className="text-sm font-medium text-emerald-300">
                           相手先へ確認依頼を送信しました（モック）。相手先返信待ちです。
                         </p>
                       </div>
@@ -586,7 +590,7 @@ export default function Page({ params }: { params: { id: string } }) {
                             updateDraftBody(order.id, e.target.value)
                           }
                           rows={10}
-                          className="w-full resize-y rounded-md border border-surface-border bg-white px-3 py-3 text-sm leading-relaxed text-ink outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                          className="w-full resize-y rounded-md border border-surface-border bg-surface-input px-3 py-3 text-sm leading-relaxed text-ink outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
                         />
                       </div>
 
@@ -636,7 +640,7 @@ export default function Page({ params }: { params: { id: string } }) {
               基幹システムのマスタと照合した結果、値の不整合が見つかりました。内容を修正すると自動処理を再開できます。
             </NoticeBlock>
 
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-4">
+            <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
               <p className="mb-2 text-xs font-semibold text-ink-muted">
                 検出されたエラー
               </p>
@@ -645,7 +649,7 @@ export default function Page({ params }: { params: { id: string } }) {
                   {order.validationErrors.map((v, i) => (
                     <li
                       key={`${v.fieldKey}-${i}`}
-                      className="flex items-start gap-2 text-sm text-red-600"
+                      className="flex items-start gap-2 text-sm text-rose-300"
                     >
                       <span className="mt-0.5">●</span>
                       <span>
@@ -682,7 +686,7 @@ export default function Page({ params }: { params: { id: string } }) {
                           placeholder={
                             firstItem?.productCode ?? "例）P-1024"
                           }
-                          className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                          className={INPUT_CLS}
                         />
                       </Field>
                       <Field label="数量">
@@ -695,13 +699,13 @@ export default function Page({ params }: { params: { id: string } }) {
                               ? String(firstItem.quantity)
                               : "例）50"
                           }
-                          className="w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-ink tabular-nums outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+                          className={`${INPUT_CLS} tabular-nums`}
                         />
                       </Field>
                     </div>
 
                     {dValidationMsg && (
-                      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      <div className="rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
                         ⚠️ {dValidationMsg}
                       </div>
                     )}
@@ -800,21 +804,21 @@ export default function Page({ params }: { params: { id: string } }) {
 
               {/* 不足項目 */}
               {order.missingFields.length > 0 && (
-                <div className="rounded-lg border border-surface-border bg-surface-sunken p-4">
-                  <p className="mb-2 text-xs font-semibold text-ink-muted">
+                <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-300">
                     不足項目
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-2.5">
                     {order.missingFields.map((m, i) => (
                       <li
                         key={`${m.fieldKey}-${i}`}
-                        className="text-sm text-ink-soft"
+                        className="text-[15px] leading-relaxed text-ink-soft"
                       >
                         <span className="font-semibold text-ink">
                           {m.fieldLabel}
                         </span>
                         <span className="text-ink-muted">：{m.reason}</span>
-                        <span className="ml-2 rounded bg-white px-1.5 py-0.5 text-[11px] text-ink-muted ring-1 ring-surface-border">
+                        <span className="ml-2 whitespace-nowrap rounded bg-amber-500/10 px-1.5 py-0.5 text-[11px] text-amber-300 ring-1 ring-amber-500/25">
                           {m.requiredBy === "customer"
                             ? "相手先"
                             : "自社"}
@@ -828,15 +832,15 @@ export default function Page({ params }: { params: { id: string } }) {
 
               {/* エラー内容 */}
               {order.validationErrors.length > 0 && (
-                <div className="rounded-lg border border-red-200 bg-red-50/60 p-4">
-                  <p className="mb-2 text-xs font-semibold text-red-600">
+                <div className="rounded-lg border border-rose-500/25 bg-rose-500/10 p-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-300">
                     エラー内容
                   </p>
-                  <ul className="space-y-2">
+                  <ul className="space-y-2.5">
                     {order.validationErrors.map((v, i) => (
                       <li
                         key={`${v.fieldKey}-${i}`}
-                        className="text-sm text-red-700"
+                        className="text-[15px] leading-relaxed text-rose-300"
                       >
                         <span className="font-semibold">{v.fieldLabel}</span>
                         ：{v.message}
@@ -861,12 +865,12 @@ export default function Page({ params }: { params: { id: string } }) {
               </div>
 
               {/* 推奨アクション */}
-              <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
-                <p className="mb-1 text-xs font-semibold text-brand-700">
+              <div className="rounded-lg border border-brand-500/25 bg-brand-500/10 p-4">
+                <p className="mb-1 text-xs font-semibold text-brand-300">
                   推奨アクション
                 </p>
                 {order.recommendedAction ? (
-                  <p className="text-sm leading-relaxed text-brand-700">
+                  <p className="text-sm leading-relaxed text-brand-300">
                     {order.recommendedAction}
                   </p>
                 ) : (
@@ -912,26 +916,19 @@ export default function Page({ params }: { params: { id: string } }) {
 // ------------------------------------------------------------
 function ExceptionHeader({ order }: { order: DemoOrder }) {
   return (
-    <div className="space-y-3">
-      <Link
-        href="/orders"
-        className="text-sm text-ink-muted hover:text-ink"
-      >
-        ← 受注一覧に戻る
-      </Link>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-ink">例外案件の確認・対応</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            自動処理できなかった案件の理由を確認し、必要な対応を行います。
-            <span className="ml-2 font-mono text-ink-soft">{order.id}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <PageHeader
+      title="例外の確認・対応"
+      description="自動処理できなかった案件の理由を確認し、必要な対応を行います。"
+      backHref={`/orders/${order.id}/read`}
+      backLabel="読み取り内容に戻る"
+      meta={
+        <>
+          <span className="font-mono text-[13px] text-ink-muted">{order.id}</span>
+          <CategoryBadge exceptionType={order.exceptionType} />
           <StatusBadge status={order.status} />
           <AssigneeBadge assignee={order.assignedTo} />
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

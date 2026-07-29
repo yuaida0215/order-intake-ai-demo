@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/store";
 import { deriveTasks, type TaskItem, type TaskOwner } from "@/lib/tasks";
-import { Card, SectionTitle } from "@/components/ui";
+import { Button, Card, PageHeader, SectionTitle } from "@/components/ui";
 import { KpiCard } from "@/components/Kpi";
 
 const OWNER_LABEL: Record<TaskOwner, string> = {
@@ -53,15 +53,13 @@ export default function TasksPage() {
   }, [filtered]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-ink">対応状況一覧</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          全案件を横断して、誰が何をすべきかを一覧で確認できます。
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="対応状況一覧"
+        description="AIと担当者それぞれの対応状況を横断で確認します。"
+      />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {OWNER_ORDER.map((owner) => (
           <button
             key={owner}
@@ -80,13 +78,13 @@ export default function TasksPage() {
       </div>
 
       <Card padded={false} className="p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-ink-muted">
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex items-center gap-2.5 text-[13px] text-ink-muted">
             <span className="font-medium">対応者</span>
             <select
               value={ownerFilter}
               onChange={(e) => setOwnerFilter(e.target.value as TaskOwner | "all")}
-              className="rounded-lg border border-surface-border bg-white px-2.5 py-1.5 text-sm text-ink-soft outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="h-10 rounded-lg border border-line bg-surface-input px-3 text-sm text-ink-soft outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
             >
               <option value="all">すべて</option>
               {OWNER_ORDER.map((o) => (
@@ -96,41 +94,51 @@ export default function TasksPage() {
               ))}
             </select>
           </label>
-          <label className="flex items-center gap-2 text-xs text-ink-muted">
-            <input type="checkbox" checked={highOnly} onChange={(e) => setHighOnly(e.target.checked)} />
+          <label className="flex items-center gap-2 text-[13px] text-ink-muted">
+            <input
+              type="checkbox"
+              checked={highOnly}
+              onChange={(e) => setHighOnly(e.target.checked)}
+              className="h-4 w-4 rounded border-line bg-surface-input accent-brand-500"
+            />
             優先度：高のみ
           </label>
-          <div className="ml-auto text-xs text-ink-muted">
+          <div className="ml-auto text-[13px] text-ink-muted">
             全 {tasks.length} 件中 <b className="text-ink">{filtered.length}</b> 件表示
           </div>
         </div>
       </Card>
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         {OWNER_ORDER.map((owner) => {
           const items = grouped.get(owner) ?? [];
           if (ownerFilter !== "all" && ownerFilter !== owner) return null;
           if (items.length === 0) return null;
           return (
-            <Card key={owner} padded={false} className="p-5">
-              <SectionTitle right={<span className="text-xs font-semibold tabular-nums text-ink-muted">{items.length}件</span>}>
-                ▌{OWNER_LABEL[owner]}
-              </SectionTitle>
-              <ul className="mt-2 divide-y divide-surface-border">
+            <Card key={owner} padded={false}>
+              <div className="border-b border-surface-border px-5 pb-4 pt-5">
+                <SectionTitle right={<span className="text-[13px] font-semibold tabular-nums text-ink-muted">{items.length}件</span>}>
+                  {OWNER_LABEL[owner]}
+                </SectionTitle>
+              </div>
+              <ul className="divide-y divide-surface-border">
                 {items.map((t) => (
-                  <li key={t.key} className="flex items-center justify-between gap-3 py-2.5">
-                    <div className="flex min-w-0 items-center gap-2">
-                      {t.priority === "high" && <span aria-hidden>⚠️</span>}
-                      <span className="truncate text-sm font-medium text-ink">{t.customerName}</span>
+                  <li
+                    key={t.key}
+                    className="flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.02]"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      {t.priority === "high" && (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+                          優先度：高
+                        </span>
+                      )}
+                      <span className="shrink-0 text-sm font-medium text-ink">{t.customerName}</span>
                       <span className="truncate text-sm text-ink-soft">{t.title}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => router.push(t.href)}
-                      className="shrink-0 rounded-lg border border-surface-border bg-white px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-brand-50/60"
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => router.push(t.href)}>
                       対応する →
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>

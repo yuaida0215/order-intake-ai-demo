@@ -15,8 +15,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <WatchTicker />
       <Sidebar />
-      <div className="pl-60">
-        <main className="mx-auto min-h-screen w-full max-w-[1280px] px-8 py-7">{children}</main>
+      <div className="pl-[232px]">
+        <main className="mx-auto min-h-screen w-full max-w-[1440px] px-8 py-8 xl:px-10">{children}</main>
       </div>
     </>
   );

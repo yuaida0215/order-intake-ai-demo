@@ -1,4 +1,5 @@
 import { safeNext } from "@/lib/auth";
+import { Icon } from "@/components/icons";
 
 export const metadata = { title: "ログイン｜受注取り込みAI Agent デモ" };
 
@@ -14,19 +15,19 @@ export default function LoginPage({ searchParams }: { searchParams: { e?: string
         : null;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-night px-4">
+    <div className="hero-cobalt relative flex min-h-screen items-center justify-center overflow-hidden px-4">
       {/* 背景のグラデーションオーブ */}
       <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-brand-600/30 blur-3xl" aria-hidden />
-      <div className="pointer-events-none absolute -bottom-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-indigo-600/25 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-accent-500/20 blur-3xl" aria-hidden />
 
       <div className="relative w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <div className="ai-gradient flex h-14 w-14 items-center justify-center rounded-2xl text-2xl text-white shadow-glow animate-glow-pulse">
-            🤖
+          <div className="ai-gradient flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-glow animate-glow-pulse">
+            <Icon name="sparkles" className="h-7 w-7" strokeWidth={2} />
           </div>
           <div>
-            <div className="text-lg font-bold text-white">受注取り込みAI Agent</div>
-            <div className="text-xs text-brand-300/70">Order Intake Agent — 営業デモ</div>
+            <div className="text-lg font-bold tracking-tight text-white">受注取り込みAI Agent</div>
+            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-brand-300/70">Order Intake Agent — 営業デモ</div>
           </div>
         </div>
 

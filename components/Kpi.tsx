@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 
-type Tone = "default" | "brand" | "amber" | "red" | "emerald";
+type Tone = "default" | "brand" | "amber" | "red" | "emerald" | "info";
 
 const TONE: Record<Tone, { value: string; icon: string }> = {
-  default: { value: "text-ink", icon: "bg-gray-100 text-gray-600" },
-  brand: { value: "text-brand-700", icon: "bg-brand-50 text-brand-600" },
-  amber: { value: "text-amber-700", icon: "bg-amber-50 text-amber-600" },
-  red: { value: "text-red-700", icon: "bg-red-50 text-red-600" },
-  emerald: { value: "text-emerald-700", icon: "bg-emerald-50 text-emerald-600" },
+  default: { value: "text-ink", icon: "bg-white/[0.05] text-ink-muted" },
+  brand: { value: "text-ink", icon: "bg-brand-500/12 text-brand-300" },
+  amber: { value: "text-ink", icon: "bg-amber-500/12 text-amber-300" },
+  red: { value: "text-ink", icon: "bg-rose-500/12 text-rose-300" },
+  emerald: { value: "text-ink", icon: "bg-emerald-500/12 text-emerald-300" },
+  info: { value: "text-ink", icon: "bg-info-500/12 text-info-300" },
 };
 
 export function KpiCard({
@@ -21,21 +22,23 @@ export function KpiCard({
   value: ReactNode;
   sub?: ReactNode;
   tone?: Tone;
-  icon?: string;
+  icon?: ReactNode;
 }) {
   const t = TONE[tone];
   return (
-    <div className="rounded-xl border border-surface-border bg-white p-4 shadow-card">
-      <div className="flex items-start justify-between">
-        <span className="text-xs font-medium text-ink-muted">{label}</span>
+    <div className="rounded-xl border border-surface-border bg-surface p-5 transition-colors duration-150 hover:border-line-strong">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[13px] font-medium text-ink-muted">{label}</span>
         {icon ? (
-          <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${t.icon}`} aria-hidden>
+          <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-lg ${t.icon}`} aria-hidden>
             {icon}
           </span>
         ) : null}
       </div>
-      <div className={`mt-2 text-2xl font-bold tabular-nums ${t.value}`}>{value}</div>
-      {sub ? <div className="mt-1 text-[11px] text-ink-muted">{sub}</div> : null}
+      <div className={`mt-3 text-[30px] font-bold leading-none tracking-tight tabular-nums ${t.value}`}>
+        {value}
+      </div>
+      {sub ? <div className="mt-2 text-xs text-ink-muted">{sub}</div> : null}
     </div>
   );
 }

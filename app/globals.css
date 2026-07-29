@@ -3,48 +3,72 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Inter", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  --font-sans: "Inter", "SF Pro Display", "SF Pro Text", "Helvetica Neue",
+    "Segoe UI", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Meiryo", sans-serif;
 }
 
 html,
 body {
   padding: 0;
   margin: 0;
-  background: #f8f7fc;
-  color: #161226;
+  background-color: #090a0d;
+  color: #f7f8fa;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* ===== AI-native ユーティリティ ===== */
-
-/* エージェントの紫グラデーション (静止) */
-.ai-gradient {
-  background-image: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 55%, #4f46e5 100%);
+/* キーボード操作時のフォーカスリング (アクセシビリティ) */
+:focus-visible {
+  outline: 2px solid rgba(168, 85, 247, 0.7);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
-/* 流れるグラデーション (AI稼働中のボタン等に) */
+/* ===== AI 限定ユーティリティ (グラデはAIアクション/処理中のみ) ===== */
+
+/* パープル→ピンクのブランドグラデ (静止) */
+.ai-gradient {
+  background-image: linear-gradient(120deg, #7c3aed 0%, #a855f7 48%, #ec4899 100%);
+}
+
+/* 流れるグラデ (AI処理実行中のみ) */
 .ai-gradient-anim {
-  background-image: linear-gradient(110deg, #7c3aed, #4f46e5, #8b5cf6, #7c3aed);
+  background-image: linear-gradient(110deg, #7c3aed, #a855f7, #ec4899, #7c3aed);
   background-size: 220% 100%;
   animation: sweep 2.6s linear infinite;
 }
 
-/* グラデーション文字 (数字のハイライト) */
+/* グラデ文字 (最重要数値のみ・限定使用) */
 .gradient-text {
-  background-image: linear-gradient(120deg, #7c3aed 0%, #4f46e5 80%);
+  background-image: linear-gradient(120deg, #c084fc 0%, #f472b6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* グラデーション枠線 (AIパネルの縁取り): 親に .ai-border → 内側に白背景を置く */
+/* AI処理面の控えめな環境光 (静止・低アルファ) */
+.hero-cobalt {
+  background-color: #0d0e12;
+  background-image: radial-gradient(
+    120% 160% at 100% 0%,
+    rgba(168, 85, 247, 0.14) 0%,
+    rgba(168, 85, 247, 0) 55%
+  );
+}
+
+/* グラデ枠線 (AI処理パネル限定): 親に .ai-border → 内側にダーク面 */
 .ai-border {
-  background-image: linear-gradient(135deg, rgba(139, 92, 246, 0.75), rgba(79, 70, 229, 0.55));
+  background-image: linear-gradient(120deg, rgba(168, 85, 247, 0.8), rgba(236, 72, 153, 0.7));
   padding: 1px;
 }
 
@@ -52,7 +76,7 @@ body {
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: #efedf8;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 4px;
 }
 .skeleton::after {
@@ -60,7 +84,7 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.28), transparent);
+  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.22), transparent);
   animation: shimmer 1.4s infinite;
 }
 @keyframes shimmer {
@@ -90,10 +114,10 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #2d313c;
   border-radius: 999px;
-  border: 2px solid #f6f7f9;
+  border: 2px solid #090a0d;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b6bcc6;
+  background: #3a3f4c;
 }

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/store";
-import { Card, SectionTitle } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { WatchBanner } from "@/components/WatchBanner";
 import { AlertCard } from "@/components/AlertCard";
 import type { OrderAlert } from "@/lib/types";
@@ -38,12 +38,17 @@ export default function AlertsPage() {
 
       <WatchBanner />
 
-      <Card padded={false} className="p-5">
-        <SectionTitle sub="対応が必要なアラート">受注アラート ({pending.length}件)</SectionTitle>
+      <div>
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold tracking-wide text-ink">受注アラート ({pending.length}件)</h2>
+          <p className="mt-0.5 text-xs text-ink-muted">対応が必要なアラート</p>
+        </div>
         {pending.length === 0 ? (
-          <p className="py-8 text-center text-sm text-ink-faint">現在、確認が必要なアラートはありません。</p>
+          <Card>
+            <p className="py-8 text-center text-sm text-ink-faint">現在、確認が必要なアラートはありません。</p>
+          </Card>
         ) : (
-          <div className="mt-3 space-y-3">
+          <div className="space-y-5">
             {pending.map((alert) => (
               <AlertCard
                 key={alert.id}
@@ -54,7 +59,7 @@ export default function AlertsPage() {
             ))}
           </div>
         )}
-      </Card>
+      </div>
 
       <div>
         <button

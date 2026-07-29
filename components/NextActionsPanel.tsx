@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/store";
 import type { DemoOrder } from "@/lib/types";
 import { Button } from "./ui";
+import { Icon } from "@/components/icons";
 import {
   DEFAULT_APPROVER_NAME,
   approvalDraftVariantCount,
@@ -59,50 +60,45 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
       <div className="text-xs font-semibold text-ink-muted">次のアクション</div>
 
       {isWaitingApproval && order.approval ? (
-        <div className="rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800">
+        <div className="rounded-lg border border-indigo-500/25 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-300">
           👤 {order.approval.approverName}の確認待ちです（依頼日: {order.approval.requestedOnDemoDate}）。
           <Link href="/approvals" className="ml-1 font-semibold underline hover:no-underline">
             承認状況を見る
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {order.quote ? (
-            <Button variant="primary" onClick={() => router.push(`/orders/${order.id}/quote`)}>
-              📄 見積書を見る（{order.quote.quoteNo}）
-            </Button>
-          ) : (
-            <Button variant="primary" onClick={() => router.push(`/orders/${order.id}/quote`)}>
-              📄 見積書作成
-            </Button>
-          )}
-
+        <div className="space-y-3">
+          {/* 最重要CTA: 基幹システムへ登録 (グラデ) */}
           {order.status === "auto_input_completed" || order.status === "completed" ? (
-            <Button variant="secondary" onClick={() => router.push(`/orders/${order.id}/core-system-input`)}>
-              🏢 基幹システムを確認
+            <Button variant="secondary" className="w-full" onClick={() => router.push(`/orders/${order.id}/core-system-input`)}>
+              <Icon name="checkCircle" className="h-4 w-4" /> 基幹システムの登録内容を確認
             </Button>
           ) : (
-            <Button variant="primary" onClick={() => router.push(`/orders/${order.id}/core-system-input`)}>
-              🏢 基幹システムへ入力
-            </Button>
+            <div>
+              <Button variant="ai" size="lg" className="w-full" onClick={() => router.push(`/orders/${order.id}/core-system-input`)}>
+                <Icon name="layers" className="h-[18px] w-[18px]" /> 基幹システムへ登録
+              </Button>
+              <p className="mt-1.5 text-center text-[11px] text-ink-muted">読み取り内容は確認済み — 確認なしで登録できます</p>
+            </div>
           )}
 
-          {order.invoice ? (
-            <Button variant="primary" onClick={() => router.push(`/orders/${order.id}/invoice`)}>
-              🧾 請求書を見る（{order.invoice.invoiceNo}）
+          {/* 補助アクション */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Button variant="secondary" onClick={() => router.push(`/orders/${order.id}/quote`)}>
+              <Icon name="fileText" className="h-4 w-4" />
+              {order.quote ? "見積書を見る" : "見積書作成"}
             </Button>
-          ) : (
             <Button variant="secondary" onClick={() => router.push(`/orders/${order.id}/invoice`)}>
-              🧾 請求書作成
+              <Icon name="yen" className="h-4 w-4" />
+              {order.invoice ? "請求書を見る" : "請求書作成"}
             </Button>
-          )}
-
-          <Button
-            variant="secondary"
-            onClick={() => (showApprovalForm ? setShowApprovalForm(false) : openApprovalForm())}
-          >
-            👤 上長に確認依頼
-          </Button>
+            <Button
+              variant="secondary"
+              onClick={() => (showApprovalForm ? setShowApprovalForm(false) : openApprovalForm())}
+            >
+              <Icon name="userCheck" className="h-4 w-4" /> 上長に確認依頼
+            </Button>
+          </div>
         </div>
       )}
 
@@ -114,7 +110,7 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
               <button
                 type="button"
                 onClick={regenerateDraft}
-                className="text-xs font-medium text-brand-600 hover:underline"
+                className="text-xs font-medium text-brand-300 hover:underline"
               >
                 ✨ 文面を再生成
               </button>
@@ -124,7 +120,7 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={5}
-            className="w-full resize-y rounded-md border border-surface-border bg-white px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+            className="w-full resize-y rounded-md border border-surface-border bg-white/[0.05] px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
           />
           <div className="flex gap-2">
             <Button

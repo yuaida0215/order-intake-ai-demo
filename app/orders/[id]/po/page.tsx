@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/store";
-import { Button, Card, Field, LinkButton, SectionTitle } from "@/components/ui";
+import { Button, Card, Field, LinkButton, PageHeader, SectionTitle } from "@/components/ui";
+import { StatusBadge } from "@/components/badges";
 import { SourcePreview } from "@/components/SourcePreview";
 import { formatDate, yen } from "@/lib/format";
 
@@ -43,17 +43,19 @@ export default function PoPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/orders" className="text-sm text-ink-muted hover:text-ink">
-          ← 受注一覧に戻る
-        </Link>
-        <h1 className="mt-2 text-xl font-bold text-ink">発注書の確認</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          先方から届いた発注書の内容を確認し、基幹システムへ転記します。
-          <span className="ml-1 font-mono text-ink-faint">{order.id}</span>
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="発注書の受領・転記"
+        description="先方から届いた発注書の内容を確認し、基幹システムへ転記します。"
+        backHref="/orders"
+        backLabel="受注一覧に戻る"
+        meta={
+          <>
+            <span className="font-mono text-[13px] text-ink-faint">{order.id}</span>
+            <StatusBadge status={order.status} />
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
@@ -109,18 +111,18 @@ export default function PoPage({ params }: { params: { id: string } }) {
             </div>
 
             {po?.relatedQuoteNo && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+              <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-300">
                 送付済み見積 {po.relatedQuoteNo} と照合しました：✓ 金額一致 ✓ 品目一致
               </div>
             )}
 
             <div className="border-t border-surface-border pt-5">
               {alreadyDone ? (
-                <div className="rounded-md bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-700">
+                <div className="rounded-md bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-emerald-300">
                   すでに基幹システムへ転記済みです
                 </div>
               ) : (
-                <Button variant="primary" className="w-full" onClick={handleTranscribe} disabled={transcribing}>
+                <Button variant="ai" size="lg" className="w-full" onClick={handleTranscribe} disabled={transcribing}>
                   {transcribing ? "転記準備中…" : "🤖 自動的に基幹システムに転記する"}
                 </Button>
               )}

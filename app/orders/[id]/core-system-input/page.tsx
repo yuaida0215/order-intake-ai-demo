@@ -6,8 +6,9 @@ import { useOrderStore } from "@/lib/store";
 import { CORE_INPUT_STEPS, customerCodeOf } from "@/lib/core";
 import { formatDate, yen } from "@/lib/format";
 import type { OrderItem } from "@/lib/types";
-import { Button, Card, LinkButton } from "@/components/ui";
-import { AgentAvatar, ChannelBadge } from "@/components/badges";
+import { Button, Card, LinkButton, PageHeader } from "@/components/ui";
+import { AgentAvatar, ChannelBadge, StatusBadge } from "@/components/badges";
+import { AIProcessingSteps } from "@/components/ai";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -58,7 +59,7 @@ function ErpField({
         className={[
           "flex min-h-[38px] items-center rounded-md border px-3 py-2 text-sm transition-colors duration-300",
           filled
-            ? "border-surface-border bg-white text-ink shadow-inner"
+            ? "border-surface-border bg-surface text-ink shadow-inner"
             : "border-dashed border-surface-border bg-surface-sunken text-ink-faint",
           justFilled ? "ring-2 ring-brand-200" : "",
           mono ? "font-mono tabular-nums" : "",
@@ -155,23 +156,24 @@ export default function Page({ params }: { params: { id: string } }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <Link href="/orders" className="text-sm text-ink-muted hover:text-ink">
-          ← 受注一覧に戻る
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-bold text-ink">基幹システム 受注登録（AI自動入力）</h1>
-          <ChannelBadge channel={order.channel} />
-        </div>
-        <p className="mt-1 text-sm text-ink-muted">
-          AI Agentが読み取り済みの受注情報を、基幹システムの受注登録画面へ自動で入力します。
-          <span className="ml-1 font-mono text-ink-faint">{order.id}</span> / {order.sourceName}
-        </p>
-      </div>
+      <PageHeader
+        title="基幹システムへ登録"
+        description="AI Agentが読み取り済みの受注情報を、基幹システムの受注登録画面へ自動で入力します。"
+        backHref={`/orders/${order.id}/read`}
+        backLabel="読み取り内容に戻る"
+        meta={
+          <>
+            <span className="font-mono text-[13px] text-ink-muted">{order.id}</span>
+            <StatusBadge status={order.status} />
+            <ChannelBadge channel={order.channel} />
+            <span className="text-[13px] text-ink-muted">{order.sourceName}</span>
+          </>
+        }
+      />
 
       {/* 未解決例外の注意書き */}
       {hasUnresolvedException && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
           <span aria-hidden>⚠️</span>
           <span>
             この案件には未解決の例外があります。通常は例外確認画面で修正後に登録します。
@@ -186,8 +188,8 @@ export default function Page({ params }: { params: { id: string } }) {
         {/* 左：AI Agent 実行パネル */}
         <div className="space-y-4 lg:col-span-1">
           <div className="ai-border rounded-2xl">
-            <div className="overflow-hidden rounded-[15px] bg-white">
-            <div className="border-b border-surface-border bg-brand-50 px-4 py-3">
+            <div className="overflow-hidden rounded-[15px] bg-surface">
+            <div className="border-b border-surface-border bg-brand-500/10 px-4 py-3">
               <div className="flex items-center gap-3">
                 <AgentAvatar size="h-10 w-10" pulse={running} />
                 <div>
@@ -207,51 +209,32 @@ export default function Page({ params }: { params: { id: string } }) {
 
               {/* ステップチェックリスト */}
               {(stepIndex >= 0 || completed) && (
-                <ol className="space-y-2">
-                  {CORE_INPUT_STEPS.map((label, i) => {
-                    const done = completed ? true : i < stepIndex;
-                    const active = !completed && i === stepIndex;
-                    return (
-                      <li key={label} className="flex items-start gap-2 text-sm">
-                        <span className="mt-0.5 flex h-4 w-4 flex-none items-center justify-center">
-                          {active ? (
-                            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-200 border-t-brand-600" />
-                          ) : done ? (
-                            <span className="ai-gradient grid h-4 w-4 place-items-center rounded-full text-[10px] font-bold text-white">✓</span>
-                          ) : (
-                            <span className="h-2 w-2 rounded-full bg-surface-border" />
-                          )}
-                        </span>
-                        <span
-                          className={
-                            active
-                              ? "font-semibold text-ink"
-                              : done
-                                ? "text-ink-soft"
-                                : "text-ink-faint"
-                          }
-                        >
-                          {label}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ol>
+                <AIProcessingSteps
+                  steps={CORE_INPUT_STEPS}
+                  current={completed ? CORE_INPUT_STEPS.length : stepIndex}
+                  running={running}
+                />
               )}
 
               {!completed && (
-                <Button
-                  variant="primary"
-                  onClick={runAutoInput}
-                  disabled={running || alreadyDone}
-                  className="w-full"
-                >
-                  {running ? "自動入力中…" : "▶ 自動入力開始"}
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    variant="ai"
+                    size="lg"
+                    onClick={runAutoInput}
+                    disabled={running || alreadyDone}
+                    className="w-full"
+                  >
+                    {running ? "登録実行中…" : "基幹システムへ登録"}
+                  </Button>
+                  <p className="text-center text-[11px] text-ink-muted">
+                    読み取り内容は確認済みのため、確認なしで登録できます
+                  </p>
+                </div>
               )}
 
               {completed && (
-                <div className="rounded-md bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-700">
+                <div className="rounded-md bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-emerald-300">
                   すべての項目の入力が完了しました
                 </div>
               )}
@@ -263,20 +246,20 @@ export default function Page({ params }: { params: { id: string } }) {
         {/* 右：ERP風 受注登録フォーム */}
         <div className="space-y-4 lg:col-span-2">
           {completed && generatedNo && (
-            <div className="overflow-hidden rounded-xl border border-emerald-300 bg-gradient-to-r from-emerald-50 to-white">
+            <div className="overflow-hidden rounded-xl border border-emerald-500/25 bg-emerald-500/10">
               <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-500 text-lg text-white" aria-hidden>
                     ✓
                   </span>
                   <div>
-                    <div className="text-base font-bold text-emerald-700">受注登録が完了しました</div>
-                    <div className="text-xs text-emerald-600">基幹システムへの自動入力が正常に反映されました</div>
+                    <div className="text-lg font-bold text-emerald-300">受注登録が完了しました</div>
+                    <div className="text-[13px] text-emerald-300/90">基幹システムへの自動入力が正常に反映されました</div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-emerald-200 bg-white px-4 py-2 text-right">
+                <div className="rounded-lg border border-emerald-500/25 bg-surface px-4 py-2 text-right">
                   <div className="text-[10px] font-medium uppercase tracking-widest text-ink-muted">受注番号</div>
-                  <div className="gradient-text whitespace-nowrap font-mono text-lg font-bold tabular-nums">{generatedNo}</div>
+                  <div className="whitespace-nowrap font-mono text-xl font-bold tabular-nums text-emerald-200">{generatedNo}</div>
                 </div>
               </div>
             </div>
@@ -354,7 +337,7 @@ export default function Page({ params }: { params: { id: string } }) {
                         return (
                           <tr
                             key={it.lineNo}
-                            className={rowFilled ? "bg-white transition-colors" : "bg-surface-sunken/60"}
+                            className={rowFilled ? "bg-surface transition-colors" : "bg-surface-sunken/60"}
                           >
                             <td className="px-3 py-2 font-mono text-xs text-ink">
                               {rowFilled ? it.productCode ?? "—" : <span className="text-ink-faint">入力待ち</span>}
@@ -385,7 +368,7 @@ export default function Page({ params }: { params: { id: string } }) {
                 <span
                   className={[
                     "text-xl font-bold tabular-nums transition-colors duration-300",
-                    amountFilled ? "text-brand-700" : "text-ink-faint",
+                    amountFilled ? "text-brand-300" : "text-ink-faint",
                   ].join(" ")}
                 >
                   {amountFilled ? yen(order.totalAmount) : "入力待ち"}
@@ -398,9 +381,9 @@ export default function Page({ params }: { params: { id: string } }) {
                 <span
                   className={
                     completed
-                      ? "font-semibold text-emerald-600"
+                      ? "font-semibold text-emerald-300"
                       : running
-                        ? "font-semibold text-brand-600"
+                        ? "font-semibold text-brand-300"
                         : "text-ink-faint"
                   }
                 >

@@ -2,12 +2,14 @@ import { CHANNEL_ICON, CHANNEL_LABEL, formatDateTime } from "@/lib/format";
 import type { Order } from "@/lib/types";
 import { ConversationPreview } from "./ConversationPreview";
 
-/** 元データプレビュー (§6.2 / §8) — チャネルごとに見た目を出し分ける */
-export function SourcePreview({ order }: { order: Order }) {
+/** 元データプレビュー (§6.2 / §8) — チャネルごとに見た目を出し分ける。
+ *  highlight: 抽出項目にホバー中の値。一致する元データ箇所を強調する。 */
+export function SourcePreview({ order, highlight }: { order: Order; highlight?: string }) {
   const p = order.sourcePreview;
+  const hl = highlight && highlight.trim().length >= 1 ? highlight.trim() : undefined;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-surface-border bg-white shadow-card">
+    <div className="overflow-hidden rounded-xl border border-surface-border bg-surface shadow-card">
       <div className="flex items-center justify-between border-b border-surface-border bg-surface-sunken px-4 py-2.5">
         <div className="flex items-center gap-2 text-sm font-medium text-ink-soft">
           <span aria-hidden>{CHANNEL_ICON[order.channel]}</span>
@@ -18,9 +20,9 @@ export function SourcePreview({ order }: { order: Order }) {
 
       <div className="p-4">
         {p?.kind === "fax_image" ? (
-          <FaxPreview header={p.header} lines={p.faxLines ?? []} imageDataUrl={p.imageDataUrl} />
+          <FaxPreview header={p.header} lines={p.faxLines ?? []} imageDataUrl={p.imageDataUrl} highlight={hl} />
         ) : p?.kind === "email" ? (
-          <EmailPreview header={p.header} body={p.body ?? ""} />
+          <EmailPreview header={p.header} body={p.body ?? ""} highlight={hl} />
         ) : p?.kind === "chat" ? (
           <ChatPreview header={p.header} body={p.body ?? ""} channel={order.channel} imageDataUrl={p.imageDataUrl} />
         ) : p?.kind === "edi" ? (
@@ -40,14 +42,26 @@ export function SourcePreview({ order }: { order: Order }) {
   );
 }
 
+/** highlight 文字列に一致する行かどうか (数字・語の緩い一致) */
+function lineMatches(text: string, hl?: string): boolean {
+  if (!hl) return false;
+  if (text.includes(hl)) return true;
+  // 数量など: 数字だけ抜き出して一致を見る
+  const num = hl.replace(/[^0-9]/g, "");
+  if (num.length >= 2 && text.replace(/[^0-9]/g, "").includes(num)) return true;
+  return false;
+}
+
 function FaxPreview({
   header,
   lines,
   imageDataUrl,
+  highlight,
 }: {
   header?: string;
   lines: { text: string; readable: boolean }[];
   imageDataUrl?: string;
+  highlight?: string;
 }) {
   // 実画像がある場合: 受信したFAX画像そのものと、AIが画像から抽出したテキストを並べて表示
   if (imageDataUrl) {
@@ -58,7 +72,7 @@ function FaxPreview({
           {/* 受信したFAX画像そのもの */}
           <div>
             <p className="mb-1.5 text-[11px] font-semibold text-ink-muted">受信画像（原本）</p>
-            <div className="flex justify-center rounded-lg border border-gray-300 bg-gray-100 p-3">
+            <div className="flex justify-center rounded-lg border border-white/10 bg-black/20 p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageDataUrl}
@@ -73,7 +87,12 @@ function FaxPreview({
             <div className="rounded-lg border border-gray-300 bg-[repeating-linear-gradient(0deg,#fafafa,#fafafa_22px,#f0f0f0_23px)] p-4 font-mono text-[13px] leading-6 text-gray-800 shadow-inner">
               {lines.map((l, i) =>
                 l.readable ? (
-                  <div key={i} className="whitespace-pre-wrap">{l.text}</div>
+                  <div
+                    key={i}
+                    className={`whitespace-pre-wrap rounded transition-colors ${lineMatches(l.text, highlight) ? "-mx-1 bg-brand-300/60 px-1 text-gray-900" : ""}`}
+                  >
+                    {l.text}
+                  </div>
                 ) : (
                   <div
                     key={i}
@@ -121,7 +140,7 @@ function FaxPreview({
   );
 }
 
-function EmailPreview({ header, body }: { header?: string; body: string }) {
+function EmailPreview({ header, body, highlight }: { header?: string; body: string; highlight?: string }) {
   return (
     <div>
       {header ? (
@@ -131,9 +150,16 @@ function EmailPreview({ header, body }: { header?: string; body: string }) {
           ))}
         </div>
       ) : null}
-      <pre className="whitespace-pre-wrap rounded-lg border border-surface-border bg-white p-4 font-mono text-[12.5px] leading-6 text-gray-800">
-        {body}
-      </pre>
+      <div className="whitespace-pre-wrap rounded-lg border border-surface-border bg-white p-4 font-mono text-[12.5px] leading-6 text-gray-800">
+        {body.split("\n").map((ln, i) => (
+          <div
+            key={i}
+            className={`rounded ${lineMatches(ln, highlight) ? "-mx-1 bg-brand-300/60 px-1 text-gray-900" : ""}`}
+          >
+            {ln || " "}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -149,7 +175,7 @@ function ChatPreview({
   channel: Order["channel"];
   imageDataUrl?: string;
 }) {
-  const accent = channel === "teams" ? "bg-indigo-500" : channel === "chatwork" ? "bg-teal-500" : "bg-violet-500";
+  const accent = channel === "teams" ? "bg-indigo-500" : channel === "chatwork" ? "bg-teal-500" : "bg-brand-500";
   const avatarLetter = channel === "teams" ? "T" : channel === "chatwork" ? "C" : "S";
   return (
     <div>
@@ -186,7 +212,7 @@ function ScannedImagePreview({ header, imageDataUrl }: { header?: string; imageD
           ))}
         </div>
       ) : null}
-      <div className="flex justify-center rounded-lg border border-gray-300 bg-gray-100 p-4">
+      <div className="flex justify-center rounded-lg border border-white/10 bg-black/20 p-4">
         {imageDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
