@@ -21,7 +21,7 @@ export function AlertCard({
 
   if (alert.kind === "purchase_order_received") {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-surface bg-gradient-to-b from-white/[0.04] to-transparent shadow-pop">
+      <div className="relative overflow-hidden rounded-2xl border border-line bg-surface shadow-pop">
         <span className="pointer-events-none absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-amber-300 to-amber-500" aria-hidden />
         <div className="p-5 pl-6">
           <div className="flex flex-wrap items-center gap-2">
@@ -35,7 +35,7 @@ export function AlertCard({
             発注書 {alert.poDocument?.poNo} を受信しました。内容を確認し、基幹システムへの転記へ進んでください。
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="primary" size="sm" onClick={onAccept}>
+            <Button variant="ai" size="sm" onClick={onAccept}>
               内容を確認する →
             </Button>
             <Button variant="ghost" size="sm" onClick={() => onArchive("発注書ではないと判断されました")}>
@@ -49,17 +49,17 @@ export function AlertCard({
 
   const confirmed = alert.aiClassification === "confirmed_order";
   const accentBar = confirmed
-    ? "bg-gradient-to-b from-rose-400 to-rose-600"
+    ? "bg-gradient-to-b from-brand-400 to-brand-600"
     : "bg-gradient-to-b from-amber-300 to-amber-500";
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-surface bg-gradient-to-b from-white/[0.04] to-transparent shadow-pop transition-colors hover:border-white/20">
+    <div className="relative overflow-hidden rounded-2xl border border-line bg-surface shadow-pop transition-colors hover:border-line-strong">
       {/* 分類別の左アクセントバー (カードの区切りを明確化) */}
       <span className={`pointer-events-none absolute inset-y-0 left-0 w-1.5 ${accentBar}`} aria-hidden />
 
       <div className="p-5 pl-6">
         {/* ヘッダー */}
-        <div className="flex flex-wrap items-center gap-2.5 border-b border-white/10 pb-3.5">
+        <div className="flex flex-wrap items-center gap-2.5 border-b border-line pb-3.5">
           <AgentAvatar size="h-7 w-7" className="text-sm" />
           <ChannelBadge channel={alert.channel} />
           <span className="text-sm font-semibold text-ink">{alert.suggestedCustomerName ?? "取引先不明"}</span>
@@ -74,9 +74,9 @@ export function AlertCard({
         </p>
 
         {/* 会話ログ (専用の入れ子パネルに収めて1件のまとまりを明確化) */}
-        <div className="mt-3 rounded-xl border border-white/[0.07] bg-night/60 p-3">
+        <div className="mt-3 rounded-xl border border-line bg-surface-sunken p-3">
           {alert.detectedMessageIds && alert.detectedMessageIds.length > 0 && (
-            <div className="mb-2 flex items-center gap-1.5 text-[11px] text-amber-300">
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] text-amber-700">
               <Icon name="sparkles" className="h-3 w-3" strokeWidth={2} />
               黄色部分がAIが「受注意思」と検出した発言です
             </div>
@@ -89,7 +89,7 @@ export function AlertCard({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button variant="primary" size="sm" onClick={onAccept}>
+          <Button variant="ai" size="sm" onClick={onAccept}>
             🤖 AIで読み取る
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setArchiving(true)} disabled={archiving}>

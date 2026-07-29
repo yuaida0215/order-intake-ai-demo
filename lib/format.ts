@@ -27,29 +27,28 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   po_received: "発注書受領・転記待ち",
 };
 
-/** ステータスの配色クラス (bg / text / border / dot) — §13 の意味・色に統一 */
+/** ステータスの配色クラス (bg / text / border / dot) — ライトPMG・§13の意味色に統一 */
 export const STATUS_STYLE: Record<OrderStatus, { chip: string; dot: string }> = {
-  // 未処理: グレー
-  new: { chip: "bg-white/[0.04] text-ink-soft border-line", dot: "bg-ink-faint" },
-  // AI処理中: 紫
-  ai_reading: { chip: "bg-brand-500/12 text-brand-300 border-brand-500/30", dot: "bg-brand-400" },
+  // 未処理: ニュートラル
+  new: { chip: "bg-surface-sunken text-ink-soft border-line", dot: "bg-ink-faint" },
+  // AI処理中: PMGブルー
+  ai_reading: { chip: "bg-brand-50 text-brand-700 border-brand-200", dot: "bg-brand-500" },
   // 完了: 緑
-  read_completed: { chip: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400" },
-  auto_input_completed: { chip: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400" },
-  completed: { chip: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400" },
-  // 自社確認待ち: 黄色
-  internal_review_required: { chip: "bg-amber-500/12 text-amber-300 border-amber-500/30", dot: "bg-amber-400" },
+  read_completed: { chip: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  auto_input_completed: { chip: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  completed: { chip: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  // 自社確認待ち: 黄
+  internal_review_required: { chip: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
   // 相手先確認待ち / 返信待ち: オレンジ
-  customer_action_required: { chip: "bg-orange-500/12 text-orange-300 border-orange-500/30", dot: "bg-orange-400" },
-  waiting_customer_reply: { chip: "bg-orange-500/12 text-orange-300 border-orange-500/30", dot: "bg-orange-400" },
-  // 返信ドラフト作成済み: 青
-  reply_drafted: { chip: "bg-info-500/12 text-info-300 border-info-500/30", dot: "bg-info-400" },
-  // 見積・上長確認待ち: 青
-  quote_drafted: { chip: "bg-info-500/12 text-info-300 border-info-500/30", dot: "bg-info-400" },
-  quote_sent: { chip: "bg-info-500/12 text-info-300 border-info-500/30", dot: "bg-info-400" },
-  waiting_manager_approval: { chip: "bg-info-500/12 text-info-300 border-info-500/30", dot: "bg-info-400" },
-  // 発注書受領・転記待ち: 黄色
-  po_received: { chip: "bg-amber-500/12 text-amber-300 border-amber-500/30", dot: "bg-amber-400" },
+  customer_action_required: { chip: "bg-orange-50 text-orange-700 border-orange-200", dot: "bg-orange-500" },
+  waiting_customer_reply: { chip: "bg-orange-50 text-orange-700 border-orange-200", dot: "bg-orange-500" },
+  // 返信ドラフト・見積・上長確認待ち: ブルー
+  reply_drafted: { chip: "bg-brand-50 text-brand-700 border-brand-200", dot: "bg-brand-500" },
+  quote_drafted: { chip: "bg-brand-50 text-brand-700 border-brand-200", dot: "bg-brand-500" },
+  quote_sent: { chip: "bg-brand-50 text-brand-700 border-brand-200", dot: "bg-brand-500" },
+  waiting_manager_approval: { chip: "bg-brand-50 text-brand-700 border-brand-200", dot: "bg-brand-500" },
+  // 発注書受領・転記待ち: 黄
+  po_received: { chip: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
 };
 
 export const ASSIGNEE_LABEL: Record<AssigneeType, string> = {
@@ -60,10 +59,10 @@ export const ASSIGNEE_LABEL: Record<AssigneeType, string> = {
 };
 
 export const ASSIGNEE_STYLE: Record<AssigneeType, string> = {
-  ai: "bg-brand-500/12 text-brand-300 border-brand-500/30",
-  internal_user: "bg-amber-500/12 text-amber-300 border-amber-500/30",
-  customer: "bg-orange-500/12 text-orange-300 border-orange-500/30",
-  none: "bg-white/[0.04] text-ink-muted border-line",
+  ai: "bg-brand-50 text-brand-700 border-brand-200",
+  internal_user: "bg-amber-50 text-amber-700 border-amber-200",
+  customer: "bg-orange-50 text-orange-700 border-orange-200",
+  none: "bg-surface-sunken text-ink-muted border-line",
 };
 
 export const CHANNEL_LABEL: Record<OrderChannel, string> = {
@@ -153,9 +152,9 @@ export function confidencePct(score: number): string {
 
 /** 信頼度に応じた配色 (§8-4: 95%以上=成功 / 85-94%=注意 / 84%以下=要確認) */
 export function confidenceStyle(score: number): string {
-  if (score >= 0.95) return "text-emerald-300";
-  if (score >= 0.85) return "text-amber-300";
-  return "text-rose-300";
+  if (score >= 0.95) return "text-emerald-600";
+  if (score >= 0.85) return "text-amber-600";
+  return "text-orange-600";
 }
 
 /** 対応待ちが自社側か相手先側か (視覚区別用) */

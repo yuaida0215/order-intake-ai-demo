@@ -26,25 +26,29 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 flex w-[232px] flex-col border-r border-line bg-night-soft">
-      {/* ロゴ + サービス名 */}
-      <div className="flex items-center gap-2.5 px-5 pb-4 pt-5">
-        <span className="ai-gradient flex h-9 w-9 flex-none items-center justify-center rounded-[10px] text-white shadow-glow-sm" aria-hidden>
-          <Icon name="sparkles" className="h-[18px] w-[18px]" strokeWidth={2} />
+    <aside className="sidebar-bg fixed inset-y-0 left-0 flex w-[236px] flex-col border-r border-white/10 shadow-[6px_0_28px_-16px_rgba(6,20,36,0.8)]">
+      {/* 上部シアングロー */}
+      <span className="pointer-events-none absolute -left-10 top-0 h-40 w-56 opacity-50 blur-3xl" style={{ background: "radial-gradient(circle,rgba(0,175,236,0.4),transparent 70%)" }} aria-hidden />
+
+      {/* ブランド (タイポ主体) */}
+      <div className="relative px-5 pb-4 pt-5">
+        <span className="mb-2 inline-flex items-center rounded-full border border-accent-400/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent-300">
+          AI ORDER INTAKE
         </span>
-        <div className="min-w-0 leading-tight">
-          <div className="truncate text-[15px] font-semibold tracking-tight text-ink">受注取り込みAI</div>
-          <div className="flex items-center gap-1.5">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            </span>
-            <span className="text-[11px] font-medium text-emerald-300/90">AI Agent 稼働中</span>
-          </div>
+        <div className="text-[19px] font-bold tracking-tightish text-white">
+          受注取り込み<span className="gradient-text">AI</span>
+        </div>
+        <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-400 opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-400" />
+          </span>
+          <span className="text-[11px] font-medium text-accent-300">AIエンジン 稼働中</span>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-0.5 px-3 pt-1">
+      <nav className="relative flex-1 px-3 pt-1">
+        <div className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/30">Menu</div>
         {NAV.map((item) => {
           const active = item.match(pathname);
           const badge = badgeFor(item.href);
@@ -53,48 +57,45 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`group relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
+              className={`group relative mb-1 flex h-10 items-center gap-3 rounded-[10px] border px-3 text-sm transition-all duration-150 ease-smooth ${
                 active
-                  ? "bg-white/[0.06] font-medium text-ink"
-                  : "font-medium text-ink-muted hover:bg-white/[0.04] hover:text-ink-soft"
+                  ? "border-accent-400/45 bg-accent-400/[0.15] text-white shadow-[0_0_18px_-4px_rgba(0,175,236,0.6)]"
+                  : "border-white/[0.09] bg-white/[0.045] font-medium text-white/60 hover:-translate-y-px hover:bg-white/[0.08] hover:text-white/90"
               }`}
             >
-              {active && (
-                <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-500" aria-hidden />
-              )}
-              <Icon
-                name={item.icon}
-                className={`h-[18px] w-[18px] flex-none ${active ? "text-brand-300" : "text-ink-muted group-hover:text-ink-soft"}`}
-              />
+              {active && <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent-400" aria-hidden />}
+              <Icon name={item.icon} className={`h-[18px] w-[18px] flex-none ${active ? "text-accent-300" : "text-white/45 group-hover:text-white/80"}`} />
               <span className="flex-1 truncate">{item.label}</span>
               {badge > 0 && (
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500/90 px-1.5 text-[11px] font-bold text-white">
-                  {badge}
-                </span>
+                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-accent-500 px-1.5 text-[11px] font-bold text-white">{badge}</span>
               )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="space-y-1 border-t border-line p-3">
-        <div className="mb-1 flex items-center gap-1.5 px-1 text-[11px] font-medium text-ink-faint">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-400/70" aria-hidden />
-          営業デモモード（モック環境）
+      <div className="relative space-y-2 p-3">
+        {/* 削減時間ミニパネル */}
+        <div className="rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-2.5">
+          <div className="text-[10px] font-medium uppercase tracking-wider text-white/40">今月のAI削減時間</div>
+          <div className="mt-0.5 flex items-baseline gap-1.5">
+            <span className="text-lg font-bold tabular-nums text-white">33.5</span>
+            <span className="text-[11px] text-accent-300">時間</span>
+          </div>
         </div>
         <button
           onClick={() => {
             resetDemo();
             router.push("/orders");
           }}
-          className="flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-[13px] font-medium text-ink-muted transition-colors hover:bg-white/[0.04] hover:text-ink-soft"
+          className="flex h-9 w-full items-center gap-2.5 rounded-[10px] px-3 text-[13px] font-medium text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white/85"
         >
           <Icon name="refresh" className="h-[15px] w-[15px]" /> デモをリセット
         </button>
         <form method="post" action="/api/auth/logout">
           <button
             type="submit"
-            className="flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-[13px] font-medium text-ink-muted transition-colors hover:bg-white/[0.04] hover:text-ink-soft"
+            className="flex h-9 w-full items-center gap-2.5 rounded-[10px] px-3 text-[13px] font-medium text-white/45 transition-colors hover:bg-white/[0.06] hover:text-white/75"
           >
             <Icon name="logout" className="h-[15px] w-[15px]" /> ログアウト
           </button>

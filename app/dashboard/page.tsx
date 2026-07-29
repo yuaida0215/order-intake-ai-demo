@@ -7,19 +7,19 @@ import { CHANNEL_LABEL, STATUS_LABEL, detailRoute, yen } from "@/lib/format";
 import type { DemoOrder, OrderChannel, OrderStatus } from "@/lib/types";
 import { AgentAvatar, StatusBadge } from "@/components/badges";
 import { KpiCard } from "@/components/Kpi";
-import { Card, PageHeader, SectionTitle } from "@/components/ui";
+import { Card, HeroBanner, SectionTitle } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { LineChart, VBarChart, DonutChart, HBarChart, CHART } from "@/components/charts";
 import { MONTHLY_HISTORY, cagr, momRate, pctSigned } from "@/lib/dashboard-data";
 
 const CHANNEL_HEX: Record<OrderChannel, string> = {
   fax_image: CHART.brand,
-  email_pdf: "#c084fc",
-  email_body: "#d8b4fe",
-  slack: CHART.accent,
-  teams: "#f472b6",
+  email_pdf: CHART.navy,
+  email_body: CHART.sky,
+  slack: CHART.deep,
+  teams: CHART.amber,
   edi: CHART.emerald,
-  chatwork: CHART.info,
+  chatwork: CHART.slate,
 };
 
 const STATUS_HEX: Partial<Record<OrderStatus, string>> = {
@@ -29,12 +29,12 @@ const STATUS_HEX: Partial<Record<OrderStatus, string>> = {
   read_completed: CHART.emerald,
   completed: CHART.emerald,
   internal_review_required: CHART.amber,
-  customer_action_required: CHART.orange,
-  waiting_customer_reply: CHART.orange,
-  reply_drafted: CHART.info,
-  quote_drafted: CHART.info,
-  quote_sent: CHART.info,
-  waiting_manager_approval: CHART.info,
+  customer_action_required: CHART.amber,
+  waiting_customer_reply: CHART.amber,
+  reply_drafted: CHART.sky,
+  quote_drafted: CHART.sky,
+  quote_sent: CHART.sky,
+  waiting_manager_approval: CHART.sky,
   po_received: CHART.amber,
 };
 
@@ -76,6 +76,11 @@ export default function Page() {
   const amountTrend = MONTHLY_HISTORY.map((m) => ({ label: m.label, value: m.amount }));
   const ordersTrend = MONTHLY_HISTORY.map((m) => ({ label: m.label, value: m.orders }));
 
+  // KpiCard spark 用の系列
+  const amountSpark = MONTHLY_HISTORY.map((m) => m.amount);
+  const ordersSpark = MONTHLY_HISTORY.map((m) => m.orders);
+  const rateSpark = MONTHLY_HISTORY.map((m) => m.autoRate);
+
   // --- 構成比・ランキング (当月ライブ) ---
   const channelSlices = useMemo(() => {
     const counts = new Map<OrderChannel, number>();
@@ -115,14 +120,23 @@ export default function Page() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <HeroBanner
+        eyebrow="MONTHLY ANALYTICS"
         title="月次ダッシュボード"
-        description="AIによる受注処理の成果と受注状況を可視化します。"
-        meta={<span className="text-[13px] text-ink-muted">対象期間：2025年8月 〜 2026年7月（当月）</span>}
+        description="AIによる受注処理の成果と受注状況を可視化します。対象期間：2025年8月 〜 2026年7月（当月）。"
+        right={
+          <div className="rounded-xl border border-white/10 bg-white/[0.06] px-5 py-4 text-right">
+            <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#8FB0CC]">読取済 受注金額</div>
+            <div className="mt-1 text-[26px] font-bold leading-none tabular-nums text-white">{yen(kpi.monthlyAmount)}</div>
+            <div className="mt-1.5 text-[12px] tabular-nums text-[#B7C7D8]">
+              当月 {kpi.count}件 ・ AI自動処理 {kpi.autoInput}件
+            </div>
+          </div>
+        }
       />
 
       {allUnread ? (
-        <div className="flex items-center gap-3 rounded-xl border border-brand-500/30 bg-brand-500/[0.08] px-4 py-3 text-sm text-ink-soft">
+        <div className="flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-ink-soft">
           <AgentAvatar size="h-8 w-8" />
           <span>受注一覧で「AIで受注を取り込む」を実行すると、当月の構成比・ランキングにも反映されます（推移は過去実績を表示）。</span>
         </div>
@@ -138,9 +152,31 @@ export default function Page() {
 
       {/* 当月KPI */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiCard label="当月の受注件数" value={`${kpi.count}件`} tone="brand" icon={<Icon name="fileText" className="h-[18px] w-[18px]" />} />
-        <KpiCard label="当月の受注金額（読取済）" value={yen(kpi.monthlyAmount)} tone="default" icon={<Icon name="yen" className="h-[18px] w-[18px]" />} />
-        <KpiCard label="AI自動処理完了" value={`${kpi.autoInput}件`} tone="emerald" icon={<Icon name="checkCircle" className="h-[18px] w-[18px]" />} sub={kpi.autoRate > 0 ? `読取済の${kpi.autoRate}%` : "AI読み取り待ち"} />
+        <KpiCard
+          label="当月の受注件数"
+          value={`${kpi.count}件`}
+          tone="brand"
+          icon={<Icon name="fileText" className="h-[18px] w-[18px]" />}
+          spark={ordersSpark}
+          trend={{ dir: growth.ordersMoM >= 0 ? "up" : "down", value: pctSigned(growth.ordersMoM) }}
+        />
+        <KpiCard
+          label="当月の受注金額（読取済）"
+          value={yen(kpi.monthlyAmount)}
+          tone="default"
+          icon={<Icon name="yen" className="h-[18px] w-[18px]" />}
+          spark={amountSpark}
+          trend={{ dir: growth.amountMoM >= 0 ? "up" : "down", value: pctSigned(growth.amountMoM) }}
+        />
+        <KpiCard
+          label="AI自動処理完了"
+          value={`${kpi.autoInput}件`}
+          tone="emerald"
+          icon={<Icon name="checkCircle" className="h-[18px] w-[18px]" />}
+          sub={kpi.autoRate > 0 ? `読取済の${kpi.autoRate}%` : "AI読み取り待ち"}
+          spark={rateSpark}
+          trend={{ dir: growth.rateDelta >= 0 ? "up" : "down", value: `${growth.rateDelta >= 0 ? "+" : ""}${growth.rateDelta}pt` }}
+        />
         <KpiCard label="人の確認が必要" value={`${kpi.internalWait + kpi.customerWait}件`} tone="amber" icon={<Icon name="userCheck" className="h-[18px] w-[18px]" />} />
       </div>
 
@@ -152,7 +188,7 @@ export default function Page() {
             right={
               <div className="flex items-center gap-2">
                 <TrendPill positive={growth.amountMoM >= 0}>前月比 {pctSigned(growth.amountMoM)}</TrendPill>
-                <span className="rounded-md border border-brand-500/30 bg-brand-500/10 px-2 py-1 text-[12px] font-medium text-brand-300">
+                <span className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-[12px] font-medium text-brand-700">
                   CAGR {pctSigned(growth.amountCagr)}
                 </span>
               </div>
@@ -178,7 +214,7 @@ export default function Page() {
           >
             受注件数の推移
           </SectionTitle>
-          <VBarChart data={ordersTrend} color={CHART.info} format={(v) => `${v}件`} />
+          <VBarChart data={ordersTrend} color={CHART.sky} format={(v) => `${v}件`} />
         </Card>
 
         <Card>
@@ -218,7 +254,7 @@ function GrowthCard({ label, value, caption, positive }: { label: string; value:
   return (
     <div className="rounded-xl border border-surface-border bg-surface p-5">
       <div className="text-[13px] font-medium text-ink-muted">{label}</div>
-      <div className={`mt-2 flex items-center gap-1.5 text-[28px] font-bold leading-none tracking-tight tabular-nums ${positive ? "text-emerald-300" : "text-rose-300"}`}>
+      <div className={`mt-2 flex items-center gap-1.5 text-[28px] font-bold leading-none tracking-tight tabular-nums ${positive ? "text-emerald-600" : "text-rose-600"}`}>
         <Icon name="trendingUp" className={`h-5 w-5 ${positive ? "" : "rotate-180"}`} strokeWidth={2.2} />
         {value}
       </div>
@@ -229,7 +265,7 @@ function GrowthCard({ label, value, caption, positive }: { label: string; value:
 
 function TrendPill({ positive, children }: { positive: boolean; children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[12px] font-medium ${positive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-rose-500/30 bg-rose-500/10 text-rose-300"}`}>
+    <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[12px] font-medium ${positive ? "border-emerald-200 bg-emerald-50 text-emerald-600" : "border-rose-200 bg-rose-50 text-rose-600"}`}>
       <Icon name="trendingUp" className={`h-3.5 w-3.5 ${positive ? "" : "rotate-180"}`} />
       {children}
     </span>
@@ -263,9 +299,9 @@ function FactorAnalysis({
     },
   ];
   const toneCls: Record<string, string> = {
-    emerald: "bg-emerald-500/12 text-emerald-300",
-    brand: "bg-brand-500/12 text-brand-300",
-    info: "bg-info-500/12 text-info-300",
+    emerald: "bg-emerald-50 text-emerald-600",
+    brand: "bg-brand-50 text-brand-600",
+    info: "bg-brand-50 text-brand-600",
   };
   return (
     <div className="space-y-3">
@@ -314,11 +350,11 @@ function ListCard({
               <button
                 type="button"
                 onClick={() => onOpen(o)}
-                className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-white/[0.03]"
+                className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-surface-sunken"
               >
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-ink">
-                    {o.customerName ?? <span className="text-rose-400">取引先不明</span>}
+                    {o.customerName ?? <span className="text-rose-600">取引先不明</span>}
                   </div>
                   <div className="mt-1">
                     <StatusBadge status={o.status} />

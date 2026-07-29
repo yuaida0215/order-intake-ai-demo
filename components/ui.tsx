@@ -12,7 +12,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-xl border border-surface-border bg-surface shadow-card ${padded ? "p-6" : ""} ${className}`}
+      className={`rounded-[13px] border border-surface-border bg-surface shadow-card ${padded ? "p-6" : ""} ${className}`}
     >
       {children}
     </div>
@@ -31,7 +31,7 @@ export function SectionTitle({
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight text-ink">{children}</h2>
+        <h2 className="text-[19px] font-semibold tracking-tightish text-ink">{children}</h2>
         {sub ? <p className="mt-1 text-[13px] text-ink-muted">{sub}</p> : null}
       </div>
       {right}
@@ -40,24 +40,18 @@ export function SectionTitle({
 }
 
 // ------------------------------------------------------------
-// Button — gradient は "ai" バリアントに限定 (最重要AIアクションのみ)
+// Button — グラデは "ai" バリアント限定
 // ------------------------------------------------------------
 type ButtonVariant = "ai" | "primary" | "success" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  // 最重要AIアクション限定: パープル→ピンクのグラデ + 控えめグロー
-  ai: "ai-gradient text-white border-transparent shadow-glow-sm hover:brightness-110",
-  // 通常の主要アクション: 単色パープル (グラデなし)
+  ai: "ai-gradient text-white border-transparent shadow-glow-sm hover:shadow-glow hover:-translate-y-px",
   primary: "bg-brand-600 text-white border-transparent hover:bg-brand-500",
-  // 承認・完了
   success: "bg-emerald-600 text-white border-transparent hover:bg-emerald-500",
-  // 補助
-  secondary: "bg-surface-input text-ink-soft border-line hover:bg-surface-elevated hover:text-ink",
-  // テキストボタン
-  ghost: "bg-transparent text-ink-soft border-transparent hover:bg-white/[0.05] hover:text-ink",
-  // 破壊的・差し戻し
-  danger: "bg-transparent text-rose-300 border-rose-500/40 hover:bg-rose-500/10",
+  secondary: "bg-surface text-ink-soft border-line hover:border-line-strong hover:bg-surface-sunken",
+  ghost: "bg-transparent text-ink-soft border-transparent hover:bg-surface-sunken hover:text-ink",
+  danger: "bg-transparent text-rose-600 border-rose-300 hover:bg-rose-50",
 };
 
 const SIZE: Record<ButtonSize, string> = {
@@ -65,6 +59,9 @@ const SIZE: Record<ButtonSize, string> = {
   md: "h-11 gap-2 px-5 text-sm",
   lg: "h-12 gap-2 px-6 text-[15px]",
 };
+
+const BTN_BASE =
+  "inline-flex items-center justify-center whitespace-nowrap rounded-[9px] border font-medium transition-all duration-150 ease-smooth disabled:cursor-not-allowed disabled:opacity-40";
 
 type ButtonProps = {
   children: ReactNode;
@@ -75,9 +72,6 @@ type ButtonProps = {
   onClick?: () => void;
   type?: "button" | "submit";
 };
-
-const BTN_BASE =
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg border font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40";
 
 export function Button({
   children,
@@ -121,7 +115,7 @@ export function LinkButton({
 }
 
 // ------------------------------------------------------------
-// PageHeader — 全画面共通のページヘッダー
+// PageHeader — 通常はライトのページヘッダー
 // ------------------------------------------------------------
 export function PageHeader({
   title,
@@ -144,14 +138,14 @@ export function PageHeader({
         {backHref ? (
           <Link
             href={backHref}
-            className="mb-1.5 inline-flex items-center gap-1 text-[13px] text-ink-muted transition-colors hover:text-ink"
+            className="mb-1.5 inline-flex items-center gap-1 text-[13px] text-ink-muted transition-colors hover:text-brand-600"
           >
             <span aria-hidden>←</span> {backLabel}
           </Link>
         ) : null}
-        <h1 className="text-[27px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
+        <h1 className="text-[27px] font-bold leading-tight tracking-tightish text-ink">{title}</h1>
         {description ? (
-          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-muted">{description}</p>
+          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-ink-soft">{description}</p>
         ) : null}
         {meta ? <div className="mt-3 flex flex-wrap items-center gap-2">{meta}</div> : null}
       </div>
@@ -160,7 +154,52 @@ export function PageHeader({
   );
 }
 
-/** ラベル + 値の行 (詳細表示用) */
+// ------------------------------------------------------------
+// HeroBanner — 主要ページのダーク・ネオン ヒーロー
+// ------------------------------------------------------------
+export function HeroBanner({
+  eyebrow,
+  title,
+  description,
+  actions,
+  right,
+}: {
+  eyebrow?: string;
+  title: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  right?: ReactNode;
+}) {
+  return (
+    <div className="hero-navy relative overflow-hidden rounded-2xl border border-white/10 px-7 py-7 shadow-navy sm:px-9">
+      {/* 上部アクセントライン */}
+      <span className="accent-line pointer-events-none absolute inset-x-0 top-0 h-[3px]" aria-hidden />
+      {/* 右上シアングロー */}
+      <span
+        className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full opacity-60 blur-3xl"
+        style={{ background: "radial-gradient(circle, rgba(0,175,236,0.5) 0%, rgba(0,175,236,0) 70%)" }}
+        aria-hidden
+      />
+      <div className="relative flex flex-wrap items-end justify-between gap-5">
+        <div className="min-w-0">
+          {eyebrow ? (
+            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-accent-400/40 bg-accent-400/10 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-accent-300">
+              {eyebrow}
+            </span>
+          ) : null}
+          <h1 className="neon-cyan text-[28px] font-bold leading-tight tracking-tightish text-white">{title}</h1>
+          {description ? (
+            <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#B7C7D8]">{description}</p>
+          ) : null}
+          {actions ? <div className="mt-5 flex flex-wrap items-center gap-2.5">{actions}</div> : null}
+        </div>
+        {right ? <div className="flex-none">{right}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+/** ラベル + 値の行 */
 export function Field({
   label,
   children,
@@ -173,17 +212,15 @@ export function Field({
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs font-medium text-ink-muted">{label}</span>
-      <span className={`text-sm ${missing ? "text-rose-400" : "text-ink"}`}>{children}</span>
+      <span className={`text-sm ${missing ? "text-orange-600" : "text-ink"}`}>{children}</span>
     </div>
   );
 }
 
-/** 空値プレースホルダ */
 export function Empty() {
   return <span className="text-ink-faint">—</span>;
 }
 
-/** 空状態 (EmptyState) */
 export function EmptyState({
   icon,
   title,

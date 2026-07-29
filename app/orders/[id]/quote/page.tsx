@@ -32,11 +32,11 @@ function StatusPill({
   children: React.ReactNode;
 }) {
   const styles: Record<string, string> = {
-    brand: "border-brand-500/30 bg-brand-500/12 text-brand-300",
-    emerald: "border-emerald-500/30 bg-emerald-500/12 text-emerald-300",
-    amber: "border-amber-500/30 bg-amber-500/12 text-amber-300",
-    info: "border-info-500/30 bg-info-500/12 text-info-300",
-    rose: "border-rose-500/30 bg-rose-500/12 text-rose-300",
+    brand: "border-brand-200 bg-brand-50 text-brand-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
+    info: "border-brand-200 bg-brand-50 text-brand-700",
+    rose: "border-rose-200 bg-rose-50 text-rose-700",
     muted: "border-line bg-surface-sunken text-ink-muted",
   };
   return (
@@ -231,7 +231,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
               <ul className="space-y-2.5">
                 {["見積金額整合", "数量・単価整合", "商品マスタ一致", "有効期限設定済み"].map((label) => (
                   <li key={label} className="flex items-center gap-2.5 text-sm text-ink-soft">
-                    <Icon name="checkCircle" className="h-4 w-4 flex-none text-emerald-400" strokeWidth={2} />
+                    <Icon name="checkCircle" className="h-4 w-4 flex-none text-emerald-600" strokeWidth={2} />
                     {label}
                   </li>
                 ))}
@@ -268,13 +268,13 @@ export default function QuotePage({ params }: { params: { id: string } }) {
               <SectionTitle sub="見積書の送付・確認依頼">次のアクション</SectionTitle>
 
               {isSent && (
-                <div className="mb-3 flex items-start gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-300">
+                <div className="mb-3 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-700">
                   <Icon name="checkCircle" className="mt-0.5 h-4 w-4 flex-none" strokeWidth={2} />
                   <span>先方に送付済みです（{quote.sentAt}・モック）</span>
                 </div>
               )}
               {isApprovalRequested && (
-                <div className="mb-3 flex items-start gap-2 rounded-lg border border-info-500/25 bg-info-500/10 px-3 py-2.5 text-sm text-info-300">
+                <div className="mb-3 flex items-start gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm text-brand-700">
                   <Icon name="userCheck" className="mt-0.5 h-4 w-4 flex-none" strokeWidth={2} />
                   <span>
                     上長の確認待ちです。
@@ -314,7 +314,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
                       <button
                         type="button"
                         onClick={regenerateDraft}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-300 hover:underline"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
                       >
                         <Icon name="sparkles" className="h-3 w-3" strokeWidth={2} />
                         再生成
@@ -325,7 +325,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     rows={5}
-                    className="w-full resize-y rounded-md border border-surface-border bg-white/[0.05] px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/40"
+                    className="w-full resize-y rounded-md border border-surface-border bg-surface px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/40"
                   />
                   <div className="flex gap-2">
                     <Button

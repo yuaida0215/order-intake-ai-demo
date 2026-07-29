@@ -15,8 +15,9 @@ import {
 import type { AssigneeType, DemoOrder, OrderChannel, OrderStatus } from "@/lib/types";
 import { AssigneeBadge, CategoryBadge, StatusBadge } from "@/components/badges";
 import { KpiCard } from "@/components/Kpi";
-import { Button, Card, PageHeader } from "@/components/ui";
+import { Button, Card, HeroBanner } from "@/components/ui";
 import { ProcessPipeline, type PipelineStage } from "@/components/ai";
+import { AiChat } from "@/components/AiChat";
 import { DetailDrawer } from "@/components/DetailDrawer";
 import { Icon } from "@/components/icons";
 
@@ -62,6 +63,14 @@ export default function OrdersPage() {
     const monthlyAmount = read.reduce((sum, o) => sum + (o.totalAmount ?? 0), 0);
     return { received: orders.length, autoInput, humanReview, savedMinutes, autoRate, monthlyAmount };
   }, [orders]);
+
+  // AIインサイト用ミニ統計 (§7-4: storeから算出)
+  const insight = useMemo(() => {
+    const candidates = alerts.filter((a) => a.status === "pending").length;
+    const exceptions = orders.filter((o) => o.isRead && o.exceptionType !== null).length;
+    const approvalWaiting = orders.filter((o) => o.approval?.status === "waiting").length;
+    return { candidates, exceptions, approvalWaiting };
+  }, [orders, alerts]);
 
   // 処理パイプライン (§7-3)
   const pipeline = useMemo<PipelineStage[]>(() => {
@@ -159,14 +168,17 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-8">
-      {/* ページヘッダ */}
-      <PageHeader
+      {/* ヒーロー (フラッグシップ) */}
+      <HeroBanner
+        eyebrow="AI ORDER INTAKE"
         title="受注一覧"
         description="メール・FAX・チャット・EDIから届いた注文を、AIが自動で読み取り・分類します。"
         actions={
           <>
-            <div className="hidden items-center gap-1 rounded-lg border border-surface-border bg-surface p-1 sm:flex">
-              <span className="pl-2 pr-1 text-[11px] font-medium text-ink-muted">取り込み元</span>
+            <div className="flex items-center gap-1.5">
+              <span className="mr-1 hidden text-[11px] font-medium uppercase tracking-wide text-[#8397AB] sm:inline">
+                取り込み元
+              </span>
               {[
                 ["chatwork", "Chatwork"],
                 ["slack", "Slack"],
@@ -176,7 +188,7 @@ export default function OrdersPage() {
                   key={ep}
                   onClick={() => importFrom(ep, label)}
                   disabled={importing !== null}
-                  className="rounded-md px-2.5 py-1.5 text-[13px] font-medium text-ink-muted transition-colors hover:bg-white/[0.05] hover:text-ink disabled:opacity-40"
+                  className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-[12px] font-medium text-[#B7C7D8] transition-colors hover:bg-white/[0.12] hover:text-white disabled:opacity-40"
                 >
                   {importing === label ? "確認中…" : label}
                 </button>
@@ -204,35 +216,44 @@ export default function OrdersPage() {
         }
       />
 
-      {/* KPI 4指標 */}
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      {/* KPI 4指標 (画面幅で自動リフロー) */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
         <KpiCard
-          label="本日の受注"
+          label="本日処理"
           value={`${kpi.received}件`}
           tone="brand"
           icon={<Icon name="inbox" className="h-[18px] w-[18px]" />}
           sub="メール・FAX・チャット・EDI"
+          trend={{ dir: "up", value: "+2件" }}
+          spark={[3, 5, 4, 6, 5, 8, kpi.received]}
         />
         <KpiCard
-          label="AI自動処理完了"
-          value={`${kpi.autoInput}件`}
+          label="AI自動処理率"
+          value={`${kpi.autoRate}%`}
           tone="emerald"
-          icon={<Icon name="checkCircle" className="h-[18px] w-[18px]" />}
-          sub={kpi.autoRate > 0 ? `読取済の${kpi.autoRate}%を自動処理` : "AI読み取り待ち"}
+          accent
+          icon={<Icon name="gauge" className="h-[18px] w-[18px]" />}
+          sub={kpi.autoRate > 0 ? `読取済の${kpi.autoInput}件を自動登録` : "AI読み取り待ち"}
+          trend={{ dir: "up", value: "+6pt" }}
+          spark={[42, 48, 51, 55, 58, 61, kpi.autoRate]}
         />
         <KpiCard
-          label="人の確認が必要"
-          value={`${kpi.humanReview}件`}
-          tone="amber"
-          icon={<Icon name="userCheck" className="h-[18px] w-[18px]" />}
-          sub={kpi.humanReview > 0 ? "要確認項目あり" : "確認事項なし"}
+          label="1件あたり処理時間"
+          value="約3分"
+          tone="info"
+          icon={<Icon name="clock" className="h-[18px] w-[18px]" />}
+          sub="従来の手作業（2〜3時間）から大幅短縮"
+          trend={{ dir: "down", value: "-98%" }}
+          spark={[180, 150, 90, 45, 20, 8, 3]}
         />
         <KpiCard
           label="本日の削減時間"
           value={fmtDuration(kpi.savedMinutes)}
-          tone="info"
-          icon={<Icon name="clock" className="h-[18px] w-[18px]" />}
+          tone="amber"
+          icon={<Icon name="zap" className="h-[18px] w-[18px]" />}
           sub="手作業換算・1件あたり約12分"
+          trend={{ dir: "up", value: "+36分" }}
+          spark={[24, 36, 48, 60, 84, 96, kpi.savedMinutes]}
         />
       </div>
 
@@ -248,9 +269,40 @@ export default function OrdersPage() {
         <ProcessPipeline stages={pipeline} />
       </div>
 
+      {/* AIインサイト (§7-4: ネイビー帯 + 3ミニ統計) */}
+      <div className="surface-cover relative overflow-hidden rounded-2xl border border-white/10 shadow-navy">
+        <span className="accent-line pointer-events-none absolute inset-x-0 top-0 h-[3px]" aria-hidden />
+        <span
+          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-50 blur-3xl"
+          style={{ background: "radial-gradient(circle, rgba(0,175,236,0.45) 0%, rgba(0,175,236,0) 70%)" }}
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3.5">
+            <span className="ai-gradient mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-xl text-white shadow-glow-cyan">
+              <Icon name="sparkles" className="h-5 w-5" strokeWidth={2} />
+            </span>
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-accent-300">AI INSIGHTS</div>
+              <h2 className="neon-cyan mt-1 text-xl font-bold leading-snug tracking-tightish text-white">
+                AIが受注状況をリアルタイムに把握しています
+              </h2>
+              <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-[#B7C7D8]">
+                会話・メール・FAXから検知した受注候補と、人の判断が必要なポイントを常時モニタリングしています。
+              </p>
+            </div>
+          </div>
+          <div className="grid flex-none grid-cols-3 gap-x-8 gap-y-3 border-t border-white/10 pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <InsightStat label="受注候補" value={insight.candidates} tone="cyan" />
+            <InsightStat label="要対応の例外" value={insight.exceptions} tone="amber" />
+            <InsightStat label="上長承認待ち" value={insight.approvalWaiting} tone="default" />
+          </div>
+        </div>
+      </div>
+
       {/* AI検知アラート (§7-4) */}
       {pendingAlertCount > 0 && (
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-brand-500/25 bg-brand-500/[0.06] px-5 py-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 sm:flex-row sm:items-center">
           <span className="ai-gradient flex h-9 w-9 flex-none items-center justify-center rounded-lg text-white shadow-glow-sm">
             <Icon name="sparkles" className="h-[18px] w-[18px]" strokeWidth={2} />
           </span>
@@ -270,94 +322,118 @@ export default function OrdersPage() {
       )}
 
       {importNote && (
-        <div className="rounded-lg border border-info-500/30 bg-info-500/10 px-4 py-3 text-sm text-info-300">
+        <div className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700">
           {importNote}
         </div>
       )}
 
-      {/* フィルターツールバー (§7-5) */}
-      <Card padded={false} className="p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] flex-1">
-            <Icon name="inbox" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="取引先・商品名で検索"
-              className="h-10 w-full rounded-lg border border-surface-border bg-surface-input pl-9 pr-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-500"
-            />
-          </div>
-          <FilterSelect
-            label="ステータス"
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v as OrderStatus | "all")}
-            options={[["all", "すべて"], ...statusOptions.map((s) => [s, STATUS_LABEL[s]] as [string, string])]}
-          />
-          <FilterSelect
-            label="チャネル"
-            value={channelFilter}
-            onChange={(v) => setChannelFilter(v as OrderChannel | "all")}
-            options={[["all", "すべて"], ...(Object.keys(CHANNEL_LABEL) as OrderChannel[]).map((c) => [c, CHANNEL_LABEL[c]] as [string, string])]}
-          />
-          <FilterSelect
-            label="対応者"
-            value={assigneeFilter}
-            onChange={(v) => setAssigneeFilter(v as AssigneeType | "all")}
-            options={[
-              ["all", "すべて"],
-              ["ai", ASSIGNEE_LABEL.ai],
-              ["internal_user", ASSIGNEE_LABEL.internal_user],
-              ["customer", ASSIGNEE_LABEL.customer],
-              ["none", ASSIGNEE_LABEL.none],
-            ]}
-          />
-          {filtersActive && (
-            <button
-              onClick={resetFilters}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium text-ink-muted transition-colors hover:bg-white/[0.05] hover:text-ink"
-            >
-              <Icon name="refresh" className="h-3.5 w-3.5" /> リセット
-            </button>
-          )}
-          <div className="ml-auto text-[13px] text-ink-muted">
-            全 {orders.length} 件中 <span className="font-semibold text-ink">{filtered.length}</span> 件
-          </div>
-        </div>
-      </Card>
+      {/* 主要コンテンツ (左: フィルタ+テーブル) / AIチャット (右) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-6">
+          {/* フィルターツールバー (§7-5) */}
+          <Card padded={false} className="p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[220px] flex-1">
+                <Icon name="inbox" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="取引先・商品名で検索"
+                  className="h-10 w-full rounded-lg border border-surface-border bg-surface-input pl-9 pr-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-500"
+                />
+              </div>
+              <FilterSelect
+                label="ステータス"
+                value={statusFilter}
+                onChange={(v) => setStatusFilter(v as OrderStatus | "all")}
+                options={[["all", "すべて"], ...statusOptions.map((s) => [s, STATUS_LABEL[s]] as [string, string])]}
+              />
+              <FilterSelect
+                label="チャネル"
+                value={channelFilter}
+                onChange={(v) => setChannelFilter(v as OrderChannel | "all")}
+                options={[["all", "すべて"], ...(Object.keys(CHANNEL_LABEL) as OrderChannel[]).map((c) => [c, CHANNEL_LABEL[c]] as [string, string])]}
+              />
+              <FilterSelect
+                label="対応者"
+                value={assigneeFilter}
+                onChange={(v) => setAssigneeFilter(v as AssigneeType | "all")}
+                options={[
+                  ["all", "すべて"],
+                  ["ai", ASSIGNEE_LABEL.ai],
+                  ["internal_user", ASSIGNEE_LABEL.internal_user],
+                  ["customer", ASSIGNEE_LABEL.customer],
+                  ["none", ASSIGNEE_LABEL.none],
+                ]}
+              />
+              {filtersActive && (
+                <button
+                  onClick={resetFilters}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+                >
+                  <Icon name="refresh" className="h-3.5 w-3.5" /> リセット
+                </button>
+              )}
+              <div className="ml-auto text-[13px] text-ink-muted">
+                全 {orders.length} 件中 <span className="font-semibold text-ink">{filtered.length}</span> 件
+              </div>
+            </div>
+          </Card>
 
-      {/* 受注一覧テーブル (§7-6) */}
-      <Card padded={false} className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-sm">
-            <thead>
-              <tr className="border-b border-surface-border text-left text-xs font-medium uppercase tracking-wide text-ink-muted">
-                <Th>受信日時</Th>
-                <Th>取引先</Th>
-                <Th>商品</Th>
-                <Th className="text-right">受注金額</Th>
-                <Th>ステータス</Th>
-                <Th>次に必要な対応</Th>
-                <Th>対応者</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => (
-                <OrderRow key={o.id} order={o} onOpen={() => setDrawerId(o.id)} />
-              ))}
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-14 text-center text-sm text-ink-muted">
-                    条件に合致する受注がありません。
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+          {/* 受注一覧テーブル (§7-6) */}
+          <Card padded={false} className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[960px] text-sm">
+                <thead>
+                  <tr className="border-b border-surface-border text-left text-xs font-medium uppercase tracking-wide text-ink-muted">
+                    <Th>受信日時</Th>
+                    <Th>取引先</Th>
+                    <Th>商品</Th>
+                    <Th className="text-right">受注金額</Th>
+                    <Th>ステータス</Th>
+                    <Th>次に必要な対応</Th>
+                    <Th>対応者</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((o) => (
+                    <OrderRow key={o.id} order={o} onOpen={() => setDrawerId(o.id)} />
+                  ))}
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-14 text-center text-sm text-ink-muted">
+                        条件に合致する受注がありません。
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
-      </Card>
+
+        {/* AIチャット (右カラム) */}
+        <div className="lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
+          <AiChat />
+        </div>
+      </div>
 
       {/* 詳細ドロワー (§7-6) */}
       <DetailDrawer order={orders.find((o) => o.id === drawerId) ?? null} onClose={() => setDrawerId(null)} />
+    </div>
+  );
+}
+
+/** AIインサイト帯のミニ統計 (ネイビー面 → 白文字＋シアン強調) */
+function InsightStat({ label, value, tone }: { label: string; value: number; tone: "cyan" | "amber" | "default" }) {
+  const color = tone === "cyan" ? "text-accent-300" : tone === "amber" ? "text-amber-300" : "text-white";
+  return (
+    <div>
+      <div className="text-[11px] font-medium uppercase tracking-wide text-[#B7C7D8]">{label}</div>
+      <div className={`mt-1 text-3xl font-bold leading-none tabular-nums ${color}`}>
+        {value}
+        <span className="ml-0.5 text-sm font-semibold text-[#8397AB]">件</span>
+      </div>
     </div>
   );
 }
@@ -372,7 +448,7 @@ function OrderRow({ order, onOpen }: { order: DemoOrder; onOpen: () => void }) {
       onKeyDown={(e) => {
         if (e.key === "Enter") onOpen();
       }}
-      className={`cursor-pointer border-b border-line-subtle transition-colors last:border-0 hover:bg-white/[0.03] focus:bg-white/[0.03] focus:outline-none ${order.isRead ? "row-reveal" : ""}`}
+      className={`cursor-pointer border-b border-line-subtle transition-colors last:border-0 hover:bg-surface-sunken focus:bg-surface-sunken focus:outline-none ${order.isRead ? "row-reveal" : ""}`}
     >
       <Td className="whitespace-nowrap text-ink-muted">{formatDateTime(order.receivedAt)}</Td>
 
@@ -400,12 +476,12 @@ function OrderRow({ order, onOpen }: { order: DemoOrder; onOpen: () => void }) {
                 {CHANNEL_ICON[order.channel]}
               </span>
               <span className="max-w-[160px] truncate font-medium text-ink" title={order.customerName ?? ""}>
-                {order.customerName ?? <span className="text-rose-400">未取得</span>}
+                {order.customerName ?? <span className="text-rose-600">未取得</span>}
               </span>
             </div>
           </Td>
           <Td className="max-w-[180px] truncate text-ink-soft" title={order.items[0]?.productName ?? ""}>
-            {order.items[0]?.productName ?? <span className="text-rose-400">未取得</span>}
+            {order.items[0]?.productName ?? <span className="text-rose-600">未取得</span>}
             {order.items.length > 1 ? <span className="ml-1 text-xs text-ink-muted">他{order.items.length - 1}件</span> : null}
           </Td>
           <Td className="whitespace-nowrap text-right font-semibold tabular-nums text-ink">{yen(order.totalAmount)}</Td>
@@ -438,7 +514,7 @@ function NextActionCell({ order }: { order: DemoOrder }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 text-[13px] text-emerald-300">
+    <span className="inline-flex items-center gap-1.5 text-[13px] text-emerald-700">
       <Icon name="checkCircle" className="h-3.5 w-3.5" /> 基幹登録が可能
     </span>
   );

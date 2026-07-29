@@ -173,7 +173,7 @@ export default function Page({ params }: { params: { id: string } }) {
 
       {/* 未解決例外の注意書き */}
       {hasUnresolvedException && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <span aria-hidden>⚠️</span>
           <span>
             この案件には未解決の例外があります。通常は例外確認画面で修正後に登録します。
@@ -189,7 +189,7 @@ export default function Page({ params }: { params: { id: string } }) {
         <div className="space-y-4 lg:col-span-1">
           <div className="ai-border rounded-2xl">
             <div className="overflow-hidden rounded-[15px] bg-surface">
-            <div className="border-b border-surface-border bg-brand-500/10 px-4 py-3">
+            <div className="border-b border-surface-border bg-brand-50 px-4 py-3">
               <div className="flex items-center gap-3">
                 <AgentAvatar size="h-10 w-10" pulse={running} />
                 <div>
@@ -234,7 +234,7 @@ export default function Page({ params }: { params: { id: string } }) {
               )}
 
               {completed && (
-                <div className="rounded-md bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-emerald-300">
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-700">
                   すべての項目の入力が完了しました
                 </div>
               )}
@@ -246,20 +246,20 @@ export default function Page({ params }: { params: { id: string } }) {
         {/* 右：ERP風 受注登録フォーム */}
         <div className="space-y-4 lg:col-span-2">
           {completed && generatedNo && (
-            <div className="overflow-hidden rounded-xl border border-emerald-500/25 bg-emerald-500/10">
+            <div className="overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50">
               <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-emerald-500 text-lg text-white" aria-hidden>
                     ✓
                   </span>
                   <div>
-                    <div className="text-lg font-bold text-emerald-300">受注登録が完了しました</div>
-                    <div className="text-[13px] text-emerald-300/90">基幹システムへの自動入力が正常に反映されました</div>
+                    <div className="text-lg font-bold text-emerald-700">受注登録が完了しました</div>
+                    <div className="text-[13px] text-emerald-700/90">基幹システムへの自動入力が正常に反映されました</div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-emerald-500/25 bg-surface px-4 py-2 text-right">
+                <div className="rounded-lg border border-emerald-200 bg-surface px-4 py-2 text-right">
                   <div className="text-[10px] font-medium uppercase tracking-widest text-ink-muted">受注番号</div>
-                  <div className="whitespace-nowrap font-mono text-xl font-bold tabular-nums text-emerald-200">{generatedNo}</div>
+                  <div className="whitespace-nowrap font-mono text-xl font-bold tabular-nums text-emerald-700">{generatedNo}</div>
                 </div>
               </div>
             </div>
@@ -368,7 +368,7 @@ export default function Page({ params }: { params: { id: string } }) {
                 <span
                   className={[
                     "text-xl font-bold tabular-nums transition-colors duration-300",
-                    amountFilled ? "text-brand-300" : "text-ink-faint",
+                    amountFilled ? "text-brand-700" : "text-ink-faint",
                   ].join(" ")}
                 >
                   {amountFilled ? yen(order.totalAmount) : "入力待ち"}
@@ -381,9 +381,9 @@ export default function Page({ params }: { params: { id: string } }) {
                 <span
                   className={
                     completed
-                      ? "font-semibold text-emerald-300"
+                      ? "font-semibold text-emerald-700"
                       : running
-                        ? "font-semibold text-brand-300"
+                        ? "font-semibold text-brand-700"
                         : "text-ink-faint"
                   }
                 >

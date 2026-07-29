@@ -72,7 +72,7 @@ function FaxPreview({
           {/* 受信したFAX画像そのもの */}
           <div>
             <p className="mb-1.5 text-[11px] font-semibold text-ink-muted">受信画像（原本）</p>
-            <div className="flex justify-center rounded-lg border border-white/10 bg-black/20 p-3">
+            <div className="flex justify-center rounded-lg border border-line bg-surface-sunken p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageDataUrl}
@@ -212,7 +212,7 @@ function ScannedImagePreview({ header, imageDataUrl }: { header?: string; imageD
           ))}
         </div>
       ) : null}
-      <div className="flex justify-center rounded-lg border border-white/10 bg-black/20 p-4">
+      <div className="flex justify-center rounded-lg border border-line bg-surface-sunken p-4">
         {imageDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

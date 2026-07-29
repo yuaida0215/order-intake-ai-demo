@@ -18,7 +18,7 @@ export function WatchBanner() {
             <span className="text-sm font-bold gradient-text">AI会話監視モニター</span>
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                watchEnabled ? "bg-emerald-500/10 text-emerald-300" : "bg-white/[0.05] text-ink-muted"
+                watchEnabled ? "bg-emerald-50 text-emerald-700" : "bg-surface-sunken text-ink-muted"
               }`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${watchEnabled ? "animate-pulse-soft bg-emerald-500" : "bg-gray-400"}`} />

@@ -256,14 +256,14 @@ export default function ApprovalsPage() {
                 className={`relative -mb-px flex items-center gap-2 rounded-t-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                   active
                     ? "z-10 border-surface-border border-b-transparent border-t-2 border-t-brand-500 bg-surface text-ink"
-                    : "border-transparent bg-surface-sunken text-ink-muted hover:bg-white/[0.03] hover:text-ink-soft"
+                    : "border-transparent bg-surface-sunken text-ink-muted hover:bg-line-subtle hover:text-ink-soft"
                 }`}
               >
                 <span className="flex items-center gap-1.5">
                   {t.key === ALL_TAB && <Icon name="layers" className="h-4 w-4" />}
                   {t.name}
                 </span>
-                <span className={`tabular-nums text-xs ${active ? "text-brand-300" : "text-ink-faint"}`}>
+                <span className={`tabular-nums text-xs ${active ? "text-brand-600" : "text-ink-faint"}`}>
                   ({t.count})
                 </span>
               </button>
@@ -280,7 +280,7 @@ export default function ApprovalsPage() {
                 <h2 className="text-sm font-semibold text-ink">
                   {activeDept === ALL_TAB ? "全部門の確認待ち" : `${departmentName(activeDept)}の確認待ち`}
                 </h2>
-                <span className="rounded-full bg-white/[0.05] px-2 py-0.5 text-xs font-medium tabular-nums text-ink-muted">
+                <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium tabular-nums text-ink-muted">
                   {filtered.length}件
                 </span>
               </div>
@@ -301,8 +301,8 @@ export default function ApprovalsPage() {
                         onClick={() => setSelectedKey(row.key)}
                         className={`flex w-full flex-col gap-1.5 rounded-xl border px-4 py-3 text-left transition-colors ${
                           isSelected
-                            ? "border-brand-500/40 bg-white/[0.05]"
-                            : "border-surface-border bg-surface hover:border-line-strong hover:bg-white/[0.02]"
+                            ? "border-brand-300 bg-brand-50"
+                            : "border-surface-border bg-surface hover:border-line-strong hover:bg-surface-sunken"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -328,21 +328,21 @@ export default function ApprovalsPage() {
                             <span
                               className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${
                                 decision.status === "approved"
-                                  ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
-                                  : "border-rose-500/25 bg-rose-500/10 text-rose-300"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : "border-rose-200 bg-rose-50 text-rose-700"
                               }`}
                             >
                               {decision.status === "approved" ? "承認済み（デモ）" : "差し戻し済み（デモ）"}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-300">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700">
                               <Icon name="sparkles" className="h-3 w-3" strokeWidth={2} />
                               AI判定：問題なし
                             </span>
                           )}
                           <span
                             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                              row.overdue ? "bg-amber-500/10 text-amber-300" : "bg-white/[0.05] text-ink-muted"
+                              row.overdue ? "bg-amber-50 text-amber-700" : "bg-surface-sunken text-ink-muted"
                             }`}
                           >
                             {row.overdue ? <Icon name="alertTriangle" className="h-3 w-3" strokeWidth={2} /> : null}
@@ -398,7 +398,7 @@ export default function ApprovalsPage() {
                       </div>
 
                       {/* AI要約 */}
-                      <div className="rounded-xl border border-brand-500/25 bg-surface p-5">
+                      <div className="rounded-xl border border-brand-200 bg-brand-50 p-5">
                         <div className="flex items-start gap-3.5">
                           <span className="ai-gradient mt-0.5 flex h-9 w-9 flex-none items-center justify-center rounded-xl text-white shadow-glow-sm">
                             <Icon name="sparkles" className="h-5 w-5" strokeWidth={2} />
@@ -409,10 +409,10 @@ export default function ApprovalsPage() {
                             <p className="mt-1.5 text-[13px] font-medium text-ink-muted">最終判断は承認者が行います。</p>
                           </div>
                         </div>
-                        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-brand-500/15 pt-4 sm:grid-cols-2">
+                        <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-brand-200 pt-4 sm:grid-cols-2">
                           {CHECKLIST.map(([label, value]) => (
                             <div key={label} className="flex items-center gap-2 text-[13px]">
-                              <Icon name="checkCircle" className="h-4 w-4 flex-none text-emerald-400" strokeWidth={2} />
+                              <Icon name="checkCircle" className="h-4 w-4 flex-none text-emerald-600" strokeWidth={2} />
                               <span className="text-ink-muted">{label}：</span>
                               <span className="font-medium text-ink-soft">{value}</span>
                             </div>
@@ -442,7 +442,7 @@ export default function ApprovalsPage() {
                         <button
                           type="button"
                           onClick={() => router.push(detailHref(order))}
-                          className="inline-flex w-fit items-center gap-1 text-[13px] font-semibold text-brand-300 hover:underline"
+                          className="inline-flex w-fit items-center gap-1 text-[13px] font-semibold text-brand-600 hover:underline"
                         >
                           <Icon name="fileText" className="h-4 w-4" />
                           元の{TARGET_LABEL[row.target]}を見る →
@@ -472,8 +472,8 @@ export default function ApprovalsPage() {
                           <div
                             className={`flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm ${
                               decision.status === "approved"
-                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                                : "border-rose-500/30 bg-rose-500/10 text-rose-200"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-rose-200 bg-rose-50 text-rose-700"
                             }`}
                           >
                             <Icon
@@ -571,7 +571,7 @@ export default function ApprovalsPage() {
                     <button
                       type="button"
                       onClick={() => router.push(detailHref(o))}
-                      className="shrink-0 text-xs font-semibold text-brand-300 hover:underline"
+                      className="shrink-0 text-xs font-semibold text-brand-600 hover:underline"
                     >
                       詳細を見る →
                     </button>

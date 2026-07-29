@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrderStore } from "@/lib/store";
 import { deriveTasks, type TaskItem, type TaskOwner } from "@/lib/tasks";
-import { Button, Card, PageHeader, SectionTitle } from "@/components/ui";
+import { Button, Card, EmptyState, PageHeader, SectionTitle } from "@/components/ui";
 import { KpiCard } from "@/components/Kpi";
 
 const OWNER_LABEL: Record<TaskOwner, string> = {
@@ -125,11 +125,11 @@ export default function TasksPage() {
                 {items.map((t) => (
                   <li
                     key={t.key}
-                    className="flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-white/[0.02]"
+                    className="flex items-center justify-between gap-4 px-5 py-3.5 transition-colors hover:bg-surface-sunken"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       {t.priority === "high" && (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-500/30 bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                           優先度：高
                         </span>
                       )}
@@ -146,9 +146,10 @@ export default function TasksPage() {
           );
         })}
         {filtered.length === 0 && (
-          <Card>
-            <p className="py-8 text-center text-sm text-ink-faint">該当するタスクはありません。</p>
-          </Card>
+          <EmptyState
+            title="該当するタスクはありません"
+            description="フィルタ条件を変更するか、新しい受注が届くとここに表示されます。"
+          />
         )}
       </div>
     </div>

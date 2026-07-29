@@ -39,11 +39,11 @@ export function ChannelBadge({ channel }: { channel: OrderChannel }) {
 }
 
 const CATEGORY_STYLE: Record<string, string> = {
-  normal: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30",
-  A: "bg-rose-500/12 text-rose-300 border-rose-500/30",
-  B: "bg-amber-500/12 text-amber-300 border-amber-500/30",
-  C: "bg-rose-500/12 text-rose-300 border-rose-500/30",
-  D: "bg-amber-500/12 text-amber-300 border-amber-500/30",
+  normal: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  A: "bg-orange-50 text-orange-700 border-orange-200",
+  B: "bg-amber-50 text-amber-700 border-amber-200",
+  C: "bg-orange-50 text-orange-700 border-orange-200",
+  D: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
 export function CategoryBadge({ exceptionType }: { exceptionType: ExceptionType }) {
@@ -55,10 +55,10 @@ export function ConfidenceBadge({ score }: { score: number }) {
   // §8-4: 95%以上=成功 / 85-94%=注意 / 84%以下=要確認 (グラデは使わない)
   const color =
     score >= 0.95
-      ? "bg-emerald-500/12 text-emerald-300 border-emerald-500/30"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
       : score >= 0.85
-        ? "bg-amber-500/12 text-amber-300 border-amber-500/30"
-        : "bg-rose-500/12 text-rose-300 border-rose-500/30";
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : "bg-orange-50 text-orange-700 border-orange-200";
   return (
     <span className={`${chipBase} ${color}`}>
       全体信頼度 {confidencePct(score)}
@@ -70,17 +70,17 @@ export function ConfidenceBadge({ score }: { score: number }) {
 export function FieldConfidence({ score }: { score: number }) {
   const pct = confidencePct(score);
   if (score >= 0.95) {
-    return <span className="text-[11px] tabular-nums text-ink-faint">{pct}</span>;
+    return <span className="text-[11px] tabular-nums text-ink-muted">{pct}</span>;
   }
   if (score >= 0.85) {
     return (
-      <span className="inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-amber-300">
+      <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-amber-700">
         {pct}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/12 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-rose-300">
+    <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-orange-700">
       {pct} 要確認
     </span>
   );
@@ -89,14 +89,14 @@ export function FieldConfidence({ score }: { score: number }) {
 export function AlertClassificationBadge({ classification }: { classification: AlertClassification }) {
   if (classification === "confirmed_order") {
     return (
-      <span className={`${chipBase} border-rose-500/30 bg-rose-500/12 text-rose-300`}>
-        🔴 受注確定発言あり
+      <span className={`${chipBase} border-brand-200 bg-brand-50 text-brand-700`}>
+        <span className="h-1.5 w-1.5 rounded-full bg-brand-500" /> 受注確定発言あり
       </span>
     );
   }
   return (
-    <span className={`${chipBase} border-amber-500/30 bg-amber-500/12 text-amber-300`}>
-      🟡 受注の可能性あり
+    <span className={`${chipBase} border-amber-200 bg-amber-50 text-amber-700`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> 受注の可能性あり
     </span>
   );
 }

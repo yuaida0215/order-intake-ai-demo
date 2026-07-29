@@ -22,16 +22,22 @@ export default function LoginPage({ searchParams }: { searchParams: { e?: string
 
       <div className="relative w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <div className="ai-gradient flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-glow animate-glow-pulse">
+          <div className="ai-gradient flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-glow-cyan animate-glow-pulse">
             <Icon name="sparkles" className="h-7 w-7" strokeWidth={2} />
           </div>
           <div>
-            <div className="text-lg font-bold tracking-tight text-white">受注取り込みAI Agent</div>
-            <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-brand-300/70">Order Intake Agent — 営業デモ</div>
+            <span className="mb-1.5 inline-flex items-center rounded-full border border-accent-400/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent-300">
+              AI ORDER INTAKE
+            </span>
+            <div className="neon-cyan text-xl font-bold tracking-tightish text-white">
+              受注取り込み<span className="gradient-text">AI</span>
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium tracking-wide text-[#8397AB]">Order Intake Agent — 営業デモ</div>
           </div>
         </div>
 
-        <form className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl" method="post" action={action}>
+        <form className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-xl" method="post" action={action}>
+          <span className="accent-line pointer-events-none absolute inset-x-0 top-0 h-[3px]" aria-hidden />
           <h1 className="text-base font-semibold text-white">ログイン</h1>
           <p className="mt-1 text-xs leading-relaxed text-white/50">
             このデモは関係者限定です。共有パスワードを入力してください。

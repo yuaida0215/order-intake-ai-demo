@@ -60,7 +60,7 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
       <div className="text-xs font-semibold text-ink-muted">次のアクション</div>
 
       {isWaitingApproval && order.approval ? (
-        <div className="rounded-lg border border-indigo-500/25 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-300">
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
           👤 {order.approval.approverName}の確認待ちです（依頼日: {order.approval.requestedOnDemoDate}）。
           <Link href="/approvals" className="ml-1 font-semibold underline hover:no-underline">
             承認状況を見る
@@ -110,7 +110,7 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
               <button
                 type="button"
                 onClick={regenerateDraft}
-                className="text-xs font-medium text-brand-300 hover:underline"
+                className="text-xs font-medium text-brand-600 hover:underline"
               >
                 ✨ 文面を再生成
               </button>
@@ -120,7 +120,7 @@ export function NextActionsPanel({ order }: { order: DemoOrder }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={5}
-            className="w-full resize-y rounded-md border border-surface-border bg-white/[0.05] px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+            className="w-full resize-y rounded-md border border-surface-border bg-surface px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
           />
           <div className="flex gap-2">
             <Button

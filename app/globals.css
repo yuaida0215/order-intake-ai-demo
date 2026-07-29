@@ -3,80 +3,98 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Inter", "SF Pro Display", "SF Pro Text", "Helvetica Neue",
-    "Segoe UI", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
-    "Meiryo", sans-serif;
+  --font-sans: "Inter", "SF Pro Text", "Noto Sans JP", "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", "Segoe UI", "Meiryo", sans-serif;
 }
 
 html,
 body {
   padding: 0;
   margin: 0;
-  background-color: #090a0d;
-  color: #f7f8fa;
+  color: #16375a;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+/* ライトなキャンバス: 白→PMGブルーの上品なグラデ (固定) */
 body {
   min-height: 100vh;
+  background-color: #f4f7fb;
+  background-image:
+    radial-gradient(1200px 520px at 82% -12%, rgba(0, 175, 236, 0.22) 0%, rgba(0, 175, 236, 0) 58%),
+    linear-gradient(180deg, #e9f1fb 0%, #c5d9f0 46%, #9fc0e6 100%);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* キーボード操作時のフォーカスリング (アクセシビリティ) */
+/* キーボードフォーカス可視化 */
 :focus-visible {
-  outline: 2px solid rgba(168, 85, 247, 0.7);
+  outline: 2px solid rgba(0, 108, 191, 0.7);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* ===== AI 限定ユーティリティ (グラデはAIアクション/処理中のみ) ===== */
+/* ===== AI限定ユーティリティ ===== */
 
-/* パープル→ピンクのブランドグラデ (静止) */
+/* PMGブルー→シアン グラデ (最重要AIアクション/処理中のみ) */
 .ai-gradient {
-  background-image: linear-gradient(120deg, #7c3aed 0%, #a855f7 48%, #ec4899 100%);
+  background-image: linear-gradient(100deg, #0c56a0 0%, #006cbf 52%, #00afec 100%);
 }
-
-/* 流れるグラデ (AI処理実行中のみ) */
 .ai-gradient-anim {
-  background-image: linear-gradient(110deg, #7c3aed, #a855f7, #ec4899, #7c3aed);
+  background-image: linear-gradient(110deg, #0c56a0, #006cbf, #00afec, #0c56a0);
   background-size: 220% 100%;
   animation: sweep 2.6s linear infinite;
 }
 
-/* グラデ文字 (最重要数値のみ・限定使用) */
+/* グラデ文字 (ダーク面のワードマーク "AI" 等・明シアン寄り) */
 .gradient-text {
-  background-image: linear-gradient(120deg, #c084fc 0%, #f472b6 100%);
+  background-image: linear-gradient(100deg, #33c4f2 0%, #00afec 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* AI処理面の控えめな環境光 (静止・低アルファ) */
-.hero-cobalt {
-  background-color: #0d0e12;
-  background-image: radial-gradient(
-    120% 160% at 100% 0%,
-    rgba(168, 85, 247, 0.14) 0%,
-    rgba(168, 85, 247, 0) 55%
-  );
+/* ダーク・ネイビー面 (ページヒーロー) */
+.hero-navy {
+  background-color: #0b2a46;
+  background-image: linear-gradient(120deg, #0b2a46 0%, #103a5e 55%, #0e2c49 100%);
+}
+/* 表紙 / AI処理ヒーロー */
+.hero-cobalt,
+.surface-cover {
+  background-color: #0b2a46;
+  background-image: linear-gradient(135deg, #0b2a46 0%, #123a5e 52%, #17497a 100%);
+}
+/* サイドバー地 */
+.sidebar-bg {
+  background-color: #0b2036;
+  background-image: linear-gradient(180deg, #0f2c49 0%, #08192b 100%);
 }
 
-/* グラデ枠線 (AI処理パネル限定): 親に .ai-border → 内側にダーク面 */
+/* ダーク面のシアン・ネオン */
+.neon-cyan {
+  text-shadow: 0 0 22px rgba(0, 175, 236, 0.45);
+}
+.accent-line {
+  background-image: linear-gradient(90deg, #00afec 0%, #006cbf 55%, #0c56a0 100%);
+}
+
+/* グラデ枠線 (AIパネル限定) */
 .ai-border {
-  background-image: linear-gradient(120deg, rgba(168, 85, 247, 0.8), rgba(236, 72, 153, 0.7));
+  background-image: linear-gradient(120deg, rgba(0, 108, 191, 0.85), rgba(0, 175, 236, 0.7));
   padding: 1px;
 }
 
-/* うっすらしたスケルトン (AI読み取り前のプレースホルダ) */
+/* スケルトン (ライト) */
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.06);
+  background: #e7eef6;
   border-radius: 4px;
 }
 .skeleton::after {
@@ -84,7 +102,7 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.22), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0, 108, 191, 0.16), transparent);
   animation: shimmer 1.4s infinite;
 }
 @keyframes shimmer {
@@ -93,7 +111,7 @@ body {
   }
 }
 
-/* テーブル行のフェードイン (読み取り確定時) */
+/* 行フェードイン */
 .row-reveal {
   animation: fade-in 0.4s ease-out;
 }
@@ -108,16 +126,29 @@ body {
   }
 }
 
-/* カスタムスクロールバー */
+/* スクロールバー (ライト) */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2d313c;
+  background: #c2ccd6;
   border-radius: 999px;
-  border: 2px solid #090a0d;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3f4c;
+  background: #a9b8c8;
+  background-clip: padding-box;
+}
+
+/* アクセシビリティ: モーション抑制設定を尊重 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

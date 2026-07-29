@@ -30,8 +30,8 @@ export function ApprovalCard({
       onClick={onSelect}
       className={`flex min-h-[72px] w-full flex-col gap-1.5 rounded-xl border px-4 py-3 text-left transition-colors ${
         selected
-          ? "border-brand-500/40 bg-white/[0.04]"
-          : "border-surface-border hover:border-line-strong hover:bg-white/[0.02]"
+          ? "border-brand-300 bg-brand-50"
+          : "border-surface-border hover:border-line-strong hover:bg-surface-sunken"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -50,13 +50,13 @@ export function ApprovalCard({
       </div>
 
       <div className="mt-0.5 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-300">
+        <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700">
           <Icon name="sparkles" className="h-3 w-3" strokeWidth={2} />
           AI判定：問題なし
         </span>
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-            overdue ? "bg-amber-500/10 text-amber-300" : "bg-white/[0.05] text-ink-muted"
+            overdue ? "bg-amber-50 text-amber-700" : "bg-surface-sunken text-ink-muted"
           }`}
         >
           {overdue ? <Icon name="alertTriangle" className="h-3 w-3" strokeWidth={2} /> : null}

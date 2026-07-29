@@ -58,7 +58,7 @@ export function DetailDrawer({ order, onClose }: { order: DemoOrder | null; onCl
           </div>
           <button
             onClick={onClose}
-            className="flex h-9 w-9 flex-none items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-white/[0.06] hover:text-ink"
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
             aria-label="閉じる"
           >
             <Icon name="chevronRight" className="h-5 w-5" />
@@ -68,7 +68,7 @@ export function DetailDrawer({ order, onClose }: { order: DemoOrder | null; onCl
         {/* 本体 (スクロール) */}
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
           {!order.isRead ? (
-            <div className="rounded-xl border border-dashed border-brand-500/30 bg-brand-500/[0.06] px-5 py-8 text-center">
+            <div className="rounded-xl border border-dashed border-brand-200 bg-brand-50 px-5 py-8 text-center">
               <p className="text-sm text-ink-muted">この受注はまだAIが読み取っていません。</p>
               <div className="mt-4">
                 <Button variant="ai" onClick={goDetail}>
@@ -94,7 +94,7 @@ export function DetailDrawer({ order, onClose }: { order: DemoOrder | null; onCl
                     <span className="font-semibold tabular-nums text-ink">{yen(order.totalAmount)}</span>
                   </Row>
                   <Row label="希望納品日">{formatDate(order.requestedDeliveryDate)}</Row>
-                  <Row label="納品先">{order.deliveryAddress ?? <span className="text-rose-400">未取得</span>}</Row>
+                  <Row label="納品先">{order.deliveryAddress ?? <span className="text-rose-600">未取得</span>}</Row>
                 </dl>
               </Section>
 
@@ -103,13 +103,13 @@ export function DetailDrawer({ order, onClose }: { order: DemoOrder | null; onCl
                 <Section title={`確認事項（${issueCount}件）`}>
                   <ul className="space-y-2">
                     {order.missingFields.map((m) => (
-                      <li key={m.fieldKey} className="flex gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[13px] text-amber-300">
+                      <li key={m.fieldKey} className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-700">
                         <Icon name="alertTriangle" className="mt-0.5 h-4 w-4 flex-none" />
                         <span><span className="font-medium">{m.fieldLabel}</span> — {m.reason}</span>
                       </li>
                     ))}
                     {order.validationErrors.map((v) => (
-                      <li key={v.fieldKey} className="flex gap-2 rounded-lg border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-[13px] text-rose-300">
+                      <li key={v.fieldKey} className="flex gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
                         <Icon name="alertTriangle" className="mt-0.5 h-4 w-4 flex-none" />
                         <span><span className="font-medium">{v.fieldLabel}</span> — {v.message}</span>
                       </li>

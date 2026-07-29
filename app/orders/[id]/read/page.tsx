@@ -6,7 +6,7 @@ import { useOrderStore } from "@/lib/store";
 import { Card, SectionTitle, Button, LinkButton, Empty, PageHeader } from "@/components/ui";
 import { StatusBadge, ChannelBadge, FieldConfidence, AgentAvatar } from "@/components/badges";
 import { SourcePreview } from "@/components/SourcePreview";
-import { AIProcessingSteps, AIResultSummary } from "@/components/ai";
+import { AIProcessingSteps, AIResultSummary, AiOrbHero } from "@/components/ai";
 import { Icon } from "@/components/icons";
 import { yen, formatDate, confidencePct } from "@/lib/format";
 import { AI_READING_STEPS } from "@/lib/core";
@@ -125,7 +125,7 @@ export default function Page({ params }: { params: { id: string } }) {
           stats={[
             { label: "確認が必要", value: `${issueCount}件`, tone: issueCount === 0 ? "emerald" : "amber" },
             { label: "全体信頼度", value: confidencePct(order.aiConfidenceScore), tone: order.aiConfidenceScore >= 0.95 ? "emerald" : "amber" },
-            { label: "削減時間", value: "約12分", tone: "brand" },
+            { label: "削減時間", value: "約12分", tone: "cyan" },
           ]}
         />
       )}
@@ -163,7 +163,7 @@ export default function Page({ params }: { params: { id: string } }) {
 
           {/* 待機状態 */}
           {showIdle && (
-            <div className="mt-4 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-brand-500/30 bg-brand-500/[0.06] px-6 py-14 text-center">
+            <div className="mt-4 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-brand-200 bg-brand-50 px-6 py-14 text-center">
               <AgentAvatar size="h-14 w-14" pulse className="rounded-2xl" />
               <p className="max-w-xs text-sm text-ink-muted">
                 この受注書はまだ読み取られていません。AI Agentがワンクリックで内容を抽出します。
@@ -174,14 +174,16 @@ export default function Page({ params }: { params: { id: string } }) {
             </div>
           )}
 
-          {/* 読み取り中 */}
+          {/* 読み取り中：シネマティックなAI処理ヒーロー */}
           {showStepper && (
-            <div className="mt-4 rounded-xl border border-brand-500/25 bg-brand-500/[0.06] p-6">
-              <div className="mb-5 flex items-center gap-3 text-sm font-medium text-ink">
-                <AgentAvatar size="h-8 w-8" pulse />
-                AI Agentが読み取り中…
-              </div>
-              <AIProcessingSteps steps={AI_READING_STEPS} current={currentStep} running />
+            <div className="mt-4">
+              <AiOrbHero
+                title={order.customerName ?? order.sourceName}
+                subtitle={order.id}
+                steps={AI_READING_STEPS}
+                current={currentStep}
+                running
+              />
             </div>
           )}
 
@@ -195,7 +197,7 @@ export default function Page({ params }: { params: { id: string } }) {
                   conf={fieldConf(order, "customerName", !!order.customerName)}
                   hover={hover(order.customerName)}
                 >
-                  {order.customerName ?? <span className="text-rose-400">未取得</span>}
+                  {order.customerName ?? <span className="text-rose-600">未取得</span>}
                 </FieldRow>
                 <FieldRow label="発注日" conf={fieldConf(order, "orderDate", !!order.orderDate)} hover={hover(order.orderDate)}>
                   {order.orderDate ? formatDate(order.orderDate) : <Empty />}
@@ -205,14 +207,14 @@ export default function Page({ params }: { params: { id: string } }) {
                   conf={fieldConf(order, "requestedDeliveryDate", !!order.requestedDeliveryDate)}
                   hover={hover(order.requestedDeliveryDate ? formatDate(order.requestedDeliveryDate) : undefined)}
                 >
-                  {order.requestedDeliveryDate ? formatDate(order.requestedDeliveryDate) : <span className="text-rose-400">未取得</span>}
+                  {order.requestedDeliveryDate ? formatDate(order.requestedDeliveryDate) : <span className="text-rose-600">未取得</span>}
                 </FieldRow>
                 <FieldRow
                   label="納品先"
                   conf={fieldConf(order, "deliveryAddress", !!order.deliveryAddress)}
                   hover={hover(order.deliveryAddress)}
                 >
-                  {order.deliveryAddress ?? <span className="text-rose-400">未取得</span>}
+                  {order.deliveryAddress ?? <span className="text-rose-600">未取得</span>}
                 </FieldRow>
               </div>
 
@@ -237,7 +239,7 @@ export default function Page({ params }: { params: { id: string } }) {
                         </tr>
                       ) : (
                         order.items.map((item) => (
-                          <tr key={item.lineNo} className="align-middle transition-colors hover:bg-white/[0.02]" {...hover(item.productName)}>
+                          <tr key={item.lineNo} className="align-middle transition-colors hover:bg-surface-sunken" {...hover(item.productName)}>
                             <td className="px-3 py-3 font-mono text-xs text-ink-soft">{item.productCode ?? <Empty />}</td>
                             <td className="px-3 py-3 text-ink">
                               {isEditing ? (
@@ -290,30 +292,30 @@ export default function Page({ params }: { params: { id: string } }) {
 
               {/* 不足項目 / エラー */}
               {order.missingFields.length > 0 && (
-                <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
-                  <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-amber-300">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-amber-700">
                     <Icon name="alertTriangle" className="h-4 w-4" /> 人の確認が必要な項目（{order.missingFields.length}件）
                   </div>
                   <ul className="space-y-1.5">
                     {order.missingFields.map((f) => (
-                      <li key={f.fieldKey} className="text-sm text-amber-300">
+                      <li key={f.fieldKey} className="text-sm text-amber-700">
                         <span className="font-medium">{f.fieldLabel}</span>
-                        <span className="text-amber-300/80"> — {f.reason}</span>
+                        <span className="text-amber-700/80"> — {f.reason}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
               {order.validationErrors.length > 0 && (
-                <div className="rounded-lg border border-rose-500/25 bg-rose-500/10 p-4">
-                  <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-rose-300">
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+                  <div className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-rose-600">
                     <Icon name="alertTriangle" className="h-4 w-4" /> エラー（{order.validationErrors.length}件）
                   </div>
                   <ul className="space-y-1.5">
                     {order.validationErrors.map((e) => (
-                      <li key={e.fieldKey} className="text-sm text-rose-300">
+                      <li key={e.fieldKey} className="text-sm text-rose-600">
                         <span className="font-medium">{e.fieldLabel}</span>
-                        <span className="text-rose-300/80"> — {e.message}</span>
+                        <span className="text-rose-600/80"> — {e.message}</span>
                       </li>
                     ))}
                   </ul>
@@ -356,7 +358,7 @@ function FieldRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02]" {...hover}>
+    <div className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken" {...hover}>
       <span className="w-24 flex-none text-xs font-medium text-ink-muted">{label}</span>
       <span className="flex-1 text-sm text-ink">{children}</span>
       <FieldConfidence score={conf} />
@@ -374,9 +376,9 @@ function AiJudgement({ order }: { order: DemoOrder }) {
     { label: "納品先確認済み", ok: !!order.deliveryAddress },
   ];
   return (
-    <div className={`rounded-lg border p-4 ${noException ? "border-emerald-500/25 bg-emerald-500/[0.07]" : "border-amber-500/25 bg-amber-500/[0.07]"}`}>
+    <div className={`rounded-lg border p-4 ${noException ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
       <div className="flex items-center gap-2">
-        <Icon name="sparkles" className={`h-4 w-4 ${noException ? "text-emerald-300" : "text-amber-300"}`} strokeWidth={2} />
+        <Icon name="sparkles" className={`h-4 w-4 ${noException ? "text-emerald-600" : "text-amber-600"}`} strokeWidth={2} />
         <span className="text-[15px] font-semibold text-ink">AI確認結果</span>
       </div>
       <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
@@ -388,11 +390,11 @@ function AiJudgement({ order }: { order: DemoOrder }) {
         {checks.map((c) => (
           <div key={c.label} className="flex items-center gap-1.5 text-[13px]">
             {c.ok ? (
-              <Icon name="checkCircle" className="h-4 w-4 flex-none text-emerald-300" strokeWidth={2} />
+              <Icon name="checkCircle" className="h-4 w-4 flex-none text-emerald-600" strokeWidth={2} />
             ) : (
-              <Icon name="alertTriangle" className="h-4 w-4 flex-none text-amber-300" />
+              <Icon name="alertTriangle" className="h-4 w-4 flex-none text-amber-600" />
             )}
-            <span className={c.ok ? "text-ink-soft" : "text-amber-300"}>{c.label}</span>
+            <span className={c.ok ? "text-ink-soft" : "text-amber-700"}>{c.label}</span>
           </div>
         ))}
       </div>

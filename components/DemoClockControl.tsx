@@ -17,14 +17,14 @@ export function DemoClockControl() {
         <button
           type="button"
           onClick={() => advanceBusinessDays(1)}
-          className="rounded-lg border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-white/[0.04]"
+          className="rounded-lg border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface-sunken"
         >
           ⏩ 1営業日進める
         </button>
         <button
           type="button"
           onClick={() => advanceBusinessDays(3)}
-          className="rounded-lg border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-white/[0.04]"
+          className="rounded-lg border border-surface-border bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-surface-sunken"
         >
           +3営業日
         </button>

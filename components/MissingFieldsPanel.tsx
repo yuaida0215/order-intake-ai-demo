@@ -42,11 +42,11 @@ export function MissingFieldsPanel({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
+    <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
       <div>
-        <p className="text-sm font-semibold text-amber-300">⚠️ 不足項目があります</p>
-        <p className="mt-0.5 text-xs text-amber-300">{missingFields.join("・")}</p>
-        <p className="mt-1 text-xs text-amber-300">
+        <p className="text-sm font-semibold text-amber-700">⚠️ 不足項目があります</p>
+        <p className="mt-0.5 text-xs text-amber-700">{missingFields.join("・")}</p>
+        <p className="mt-1 text-xs text-amber-700">
           左のプレビュー内で直接入力するか、下のボタンから顧客に確認を依頼できます。
         </p>
       </div>
@@ -60,7 +60,7 @@ export function MissingFieldsPanel({
           <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-ink-muted">AIが作成した確認依頼メッセージ（編集できます）</label>
             {customerInquiryDraftVariantCount() > 1 && (
-              <button type="button" onClick={regenerate} className="text-xs font-medium text-brand-300 hover:underline">
+              <button type="button" onClick={regenerate} className="text-xs font-medium text-brand-600 hover:underline">
                 ✨ 文面を再生成
               </button>
             )}
@@ -69,7 +69,7 @@ export function MissingFieldsPanel({
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={6}
-            className="w-full resize-y rounded-md border border-surface-border bg-white/[0.05] px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
+            className="w-full resize-y rounded-md border border-surface-border bg-surface px-3 py-2 text-sm leading-relaxed text-ink outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
           />
           <div className="flex gap-2">
             <Button
