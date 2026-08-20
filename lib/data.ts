@@ -360,6 +360,7 @@ export const SAMPLE_ORDERS: Order[] = [
     sourcePreview: {
       kind: "fax_image",
       header: "複合機FAX画像 (手書き欄あり)",
+      imageDataUrl: "/mock-documents/fax-tohoku-order.svg",
       faxLines: [
         { text: "注文書   東北商事株式会社   高橋", readable: true },
         { text: "商品：冷凍うどんセット (FZ-030)", readable: true },
