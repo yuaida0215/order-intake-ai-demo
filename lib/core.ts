@@ -8,7 +8,7 @@ export const CUSTOMER_CODE: Record<string, string> = {
   "西日本小売株式会社": "CUST-1004",
   "九州スーパー株式会社": "CUST-1005",
   "北海道フーズ株式会社": "CUST-1006",
-  "中部流通株式会社": "CUST-1007",
+  "東海流通株式会社": "CUST-1007",
   "東北商事株式会社": "CUST-1008",
 };
 
