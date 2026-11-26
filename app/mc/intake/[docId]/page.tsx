@@ -102,10 +102,10 @@ export default function IntakeRead() {
               pad={false}
             >
               <div className="p-4 pt-2">
-                <TableWrap>
+                <TableWrap minW={560}>
                   <thead>
                     <tr>
-                      <th>判定</th><th>品番</th><th>商品名</th><th>商品コード</th><th className="num">入数</th><th className="num">箱数</th><th className="num">数量</th><th>ロットNo</th><th>納期</th><th>3H</th><th className="num">信頼度</th>
+                      <th>判定</th><th>品番 / 商品名（マスタ）</th><th className="num">入数</th><th className="num">箱数</th><th className="num">数量</th><th>ロットNo</th><th>納期</th><th>3H</th><th className="num">信頼度</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -114,9 +114,10 @@ export default function IntakeRead() {
                         <td>
                           {state === "reject" ? <Chip tone="red">弾く</Chip> : state === "check" ? <Chip tone="amber">要確認</Chip> : state === "fixed" ? <Chip tone="cyan">AI補正</Chip> : <Chip tone="green">OK</Chip>}
                         </td>
-                        <td className="font-mono">{r.partNo}</td>
-                        <td>{item?.name ?? <span className="text-rose-600">マスタ未登録</span>}</td>
-                        <td className="font-mono text-ink-muted">{item?.code ?? "—"}</td>
+                        <td>
+                          <div className="whitespace-nowrap font-mono text-[12px] font-semibold">{r.partNo}</div>
+                          <div className="whitespace-nowrap text-[11px] text-ink-muted">{item ? `${item.code}｜${item.name}` : <span className="text-rose-600">マスタ未登録</span>}</div>
+                        </td>
                         <td className="num">{item?.perBox ?? r.perBox}</td>
                         <td className={`num ${r.handwritten && !r.mergedFrom ? "bg-accent-soft font-bold" : ""}`}>{r.boxes}</td>
                         <td className={`num ${r.mergedFrom ? "bg-accent-soft font-bold" : ""}`}>{num(r.qty)}</td>
