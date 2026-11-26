@@ -7,7 +7,8 @@ import { WatchTicker } from "@/components/WatchTicker";
 // /login はサイドバー無しの全画面。それ以外は左サイドバー＋メイン。
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const bare = pathname === "/login";
+  // /login と /mc（ＭＣシステムズ様向け新基幹モック・専用シェル）は既存のサイドバーを出さない
+  const bare = pathname === "/login" || pathname === "/mc" || pathname.startsWith("/mc/");
 
   if (bare) return <>{children}</>;
 

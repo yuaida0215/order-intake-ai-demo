@@ -152,3 +152,33 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ===== ＭＣ新基幹モック：表 ===== */
+.mc-table th {
+  background: #f1f5fa;
+  color: #5b6b80;
+  font-weight: 600;
+  font-size: 11.5px;
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid #d3dfeb;
+  white-space: nowrap;
+}
+.mc-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e8eef5;
+  color: #16375a;
+  vertical-align: middle;
+}
+.mc-table tbody tr:hover td {
+  background: #f7fafd;
+}
+.mc-table td.num,
+.mc-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* グリッドの子が表の最小幅に引っ張られて横にはみ出さないように（スマホ表示） */
+.mc-root .grid > * {
+  min-width: 0;
+}
