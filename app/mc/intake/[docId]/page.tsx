@@ -124,9 +124,10 @@ export default function IntakeRead() {
                               <button
                                 disabled={phase !== "read"}
                                 onClick={() => setChecked([...checked, r.partNo + r.lotNo])}
-                                className="rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 hover:bg-amber-100"
+                                className="whitespace-nowrap rounded-md border border-amber-400 bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-900 hover:bg-amber-200"
+                                title="要確認：原本を見て確かめたら押す"
                               >
-                                要確認→確かめた
+                                要確認 ✓
                               </button>
                             )
                           ) : (
@@ -177,7 +178,7 @@ export default function IntakeRead() {
                   <div className={`text-[22px] font-bold ${rejectCount ? "text-rose-600" : "text-ink-faint"}`}>{rejectCount}件</div>
                 </div>
               </div>
-              {unconfirmed > 0 && <p className="mt-2 text-[12px] text-amber-800">読みにくい手書きの行は推測で埋めず、色を付けて止めています。表の「要確認→確かめた」を押すと受入実行できます。</p>}
+              {unconfirmed > 0 && <p className="mt-2 text-[12px] text-amber-800">読みにくい手書きの行は推測で埋めず、色を付けて止めています。原本を見て、表の「要確認 ✓」を押すと受入実行できます。</p>}
               {rejectCount > 0 && <p className="mt-2 text-[12px] text-ink-muted">受入エラー（マスタ未登録）の品番は、受入実行と同時に「新規品登録表」を起票して各部門に回します。</p>}
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Btn size="sm" disabled>F2 読込 ✓</Btn>
