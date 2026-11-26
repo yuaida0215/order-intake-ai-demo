@@ -2,8 +2,8 @@
 
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { INTAKE_DOCS, LOT_FLOW, customerById, factoryById, itemByPartNo } from "@/lib/mc/data";
-import { judgeH3, lotAmount, lotCost, md, num, pct, totalKg, yen } from "@/lib/mc/calc";
+import { BILLING_GROUPS, INTAKE_DOCS, LOT_FLOW, customerById, factoryById, itemByPartNo } from "@/lib/mc/data";
+import { judgeH3, lotAmount, lotCost, md, num, pct, salesKg, totalKg, yen } from "@/lib/mc/calc";
 import { useMc } from "@/lib/mc/store";
 import { DeliveryNote, InvoicePreview, OrderDocImage, WorkTicket } from "@/components/mc/docs";
 import { Btn, Chip, H3Badge, Kv, PageHead, Panel, Sheet, StatusChip } from "@/components/mc/ui";
@@ -15,6 +15,7 @@ export default function LotDetail() {
   const lot = useMc((s) => s.lots.find((l) => l.id === id));
   const invoices = useMc((s) => s.invoices);
   const advance = useMc((s) => s.advance);
+  const fg = useMc((s) => s.factoryGroup);
   const [doc, setDoc] = useState<DocKind | null>(null);
   if (!lot) return <div className="py-20 text-center text-ink-muted">ロットが見つかりません（デモを最初に戻した可能性があります）</div>;
 
@@ -83,8 +84,10 @@ export default function LotDetail() {
           <Kv k="数量" v={num(lot.qty)} mono />
           {lot.completedQty != null && <Kv k="完成数量（不良）" v={`${num(lot.completedQty)}（${lot.defectQty ?? 0}）`} mono />}
           <Kv k="総重量" v={`${num(totalKg(lot.completedQty ?? lot.qty, it.unitWeightG), 2)} kg`} mono />
+          <Kv k="売上重量 × 単価" v={`${num(salesKg(lot, it), customerById(lot.customerId).weightRound === 1 ? 0 : 1)}kg × ${it.price}円`} mono />
           <Kv k="売上金額" v={yen(lotAmount(lot))} mono />
-          <Kv k="請求グループ" v={c.group} />
+          {lot.inspection && <Kv k="検査" v={lot.inspection} />}
+          <Kv k="請求グループ" v={`${BILLING_GROUPS.find((g) => g.id === fg[lot.factoryId])!.name}（発行元 ${BILLING_GROUPS.find((g) => g.id === fg[lot.factoryId])!.issuer}）`} />
           {lot.deliveryNo && <Kv k="納品書No" v={lot.deliveryNo} mono />}
           {lot.invoiceId && <Kv k="請求書No" v={lot.invoiceId} mono />}
           {h && (
@@ -110,9 +113,10 @@ export default function LotDetail() {
           </div>
         </Panel>
 
-        <Panel title="このロットの原価" sub="材料費・加工費・外注費を積み上げ">
+        <Panel title="このロットの原価" sub="材料費・労務費・設備費・外注費を積み上げ">
           <Kv k="材料費（処理液）" v={yen(cost.material)} mono />
-          <Kv k="加工費（ライン時間）" v={yen(cost.process)} mono />
+          <Kv k="労務費" v={yen(cost.labor)} mono />
+          <Kv k="設備費（ライン・焼付炉）" v={yen(cost.equipment)} mono />
           <Kv k="外注費" v={yen(cost.outsource)} mono />
           <Kv k="原価 計" v={yen(cost.total)} mono />
           <Kv k="売上" v={yen(cost.sales)} mono />

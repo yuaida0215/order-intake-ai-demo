@@ -14,6 +14,8 @@ export default function Payments() {
   const [toast, setToast] = useState("");
   const open = invoices.filter((i) => i.status !== "paid");
   const doneCount = Object.keys(deposits).length;
+  const accDep = INITIAL_DEPOSITS.find((d) => d.suggestion.kind === "acceptance")!;
+  const accInv = invoices.find((i) => i.id === accDep.suggestion.invoiceId)!;
 
   const apply = (id: string, msg: string) => {
     applyDeposit(id);
@@ -62,11 +64,11 @@ export default function Payments() {
                   ) : k === "exact" ? (
                     <Btn size="sm" variant="primary" onClick={() => apply(d.id, "消込しました")}>消込</Btn>
                   ) : k === "fee" ? (
-                    <Btn size="sm" variant="primary" onClick={() => apply(d.id, "消込し、660円を支払手数料で仕訳しました")}>手数料処理して消込</Btn>
+                    <Btn size="sm" variant="primary" onClick={() => apply(d.id, `消込し、${Math.abs(d.suggestion.diff).toLocaleString()}円を支払手数料で仕訳しました`)}>手数料処理して消込</Btn>
                   ) : (
                     <>
                       <Btn size="sm" onClick={() => setLetter(true)}>差額調整書の下書き</Btn>
-                      <Btn size="sm" variant="primary" onClick={() => apply(d.id, "消込し、22,000円を売上値引で仕訳しました")}>検収差額で消込</Btn>
+                      <Btn size="sm" variant="primary" onClick={() => apply(d.id, `消込し、${Math.abs(d.suggestion.diff).toLocaleString()}円を売上値引で仕訳しました`)}>検収差額で消込</Btn>
                     </>
                   )}
                 </div>
@@ -85,10 +87,10 @@ export default function Payments() {
           <table className="mt-3 w-full border-collapse text-[12px]">
             <tbody>
               {[
-                ["ご請求金額（INV-2610-0018）", "¥9,504,000"],
-                ["ご入金額", "¥9,482,000"],
-                ["差額", "¥22,000"],
-                ["差額の内容", "10/24納品分 ナックルアーム（34120-HM051）不良返品分の減額（貴社 買掛リスト記載）"],
+                ["ご請求金額（INV-2610-0018）", yen(accInv.amount + accInv.tax)],
+                ["ご入金額", yen(accDep.amount)],
+                ["差額", yen(Math.abs(accDep.suggestion.diff))],
+                ["差額の内容", "10/24納品分 ナックルアーム（34120-HM051）不良返品139個（約172kg）分の減額（貴社 買掛リスト記載）"],
               ].map(([k, v]) => (
                 <tr key={k}><td className="w-48 border border-slate-300 bg-slate-50 px-2 py-1">{k}</td><td className="border border-slate-300 px-2 py-1">{v}</td></tr>
               ))}

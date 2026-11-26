@@ -48,7 +48,7 @@ export default function Settings() {
             <TableWrap>
               <thead><tr><th>拠点</th><th>地域</th><th>帳票様式</th><th>接続</th></tr></thead>
               <tbody>
-                {FACTORIES.map((f) => <tr key={f.id}><td className="font-semibold">{f.name}</td><td>{f.region}</td><td>{f.short}工場様式</td><td><Chip tone="green">VPN</Chip></td></tr>)}
+                {FACTORIES.map((f) => <tr key={f.id}><td className="font-semibold">{f.name}</td><td>{f.region}</td><td>{f.name}様式</td><td><Chip tone="green">VPN</Chip></td></tr>)}
                 <tr><td className="font-semibold">東京事務所</td><td>東日本</td><td>—</td><td><Chip tone="green">VPN</Chip></td></tr>
               </tbody>
             </TableWrap>

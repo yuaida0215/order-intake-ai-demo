@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CUSTOMERS, DEMO_TODAY, ITEMS, customerById, factoryById, itemByPartNo, type CustomerId, type Lot } from "@/lib/mc/data";
-import { judgeH3, lotAmount, md, num, totalKg, yen } from "@/lib/mc/calc";
+import { judgeH3, lotAmount, md, num, salesKg, totalKg, yen } from "@/lib/mc/calc";
 import { useMc } from "@/lib/mc/store";
 import { WorkTicket } from "@/components/mc/docs";
 import { BeforeAfter, Btn, H3Badge, Kv, PageHead, Panel, Sheet } from "@/components/mc/ui";
@@ -53,7 +53,7 @@ export default function NewOrder() {
           <Panel title="① 品番を選ぶ">
             <label className="mb-1 block text-[12px] font-semibold text-ink-muted">得意先</label>
             <select className={input} value={customerId} onChange={(e) => onCustomer(e.target.value as CustomerId)}>
-              {customers.map((c) => <option key={c.id} value={c.id}>{c.short}（{c.id}）</option>)}
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.code} {c.short}</option>)}
             </select>
             <label className="mb-1 mt-3 block text-[12px] font-semibold text-ink-muted">品番</label>
             <select className={input} value={partNo} onChange={(e) => { setPartNo(e.target.value); setQtyOverride(null); }}>
@@ -91,7 +91,13 @@ export default function NewOrder() {
                 <br />数量 {num(qty)} × 単重 {item.unitWeightG}g ＝ 総重量 {num(kg, 2)}kg
               </div>
             )}
-            <Btn variant="primary" className="mt-4 w-full" onClick={submit} disabled={!item || qty <= 0}>登録して作業票を発行</Btn>
+            <Btn variant="primary" className="mt-4 w-full" onClick={submit} disabled={!item || qty <= 0}>登録して作業票を発行（F2）</Btn>
+            <div className="mt-3 grid grid-cols-4 gap-1 text-center text-[10.5px]">
+              {[["F2", "作業票"], ["F5", "複写"], ["F9", "修正"], ["F12", "閉じる"]].map(([k, l]) => (
+                <span key={k} className="rounded border border-line bg-surface-sunken px-1 py-1 text-ink-muted"><b className="text-ink-soft">{k}</b> {l}</span>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] text-ink-faint">今の受注入力と同じFキーの割り当てにもできます（想定）</p>
           </Panel>
         </div>
 
@@ -107,19 +113,22 @@ export default function NewOrder() {
               <Kv k="品群" v={item.group} from="master" />
               <Kv k="処理液" v={item.liquid} from="master" />
               <Kv k="商品" v={`${item.code} ${item.name}`} from="master" />
-              <Kv k="仕様" v={item.spec} from="master" />
+              <Kv k="加工内容" v={item.spec} from="master" />
               <Kv k="ロットNo" v={lotNo} from="input" />
               <Kv k="数量 / 箱数" v={`${num(qty)} / ${boxes}`} from="input" />
               <Kv k="入数 / 単重" v={`${item.perBox} / ${item.unitWeightG}g`} from="master" mono />
             </Panel>
-            <Panel title="右の段（計算・自動）">
+            <Panel title="右の段（計算・自動）" sub="今の画面と同じ並び（単位・納品単位 kg）">
               <Kv k="総重量" v={`${num(kg, 2)} kg`} from="calc" mono />
+              <Kv k="単位 / 納品単位" v="kg / kg" from="master" />
+              <Kv k="売上重量" v={`${num(salesKg({ partNo, qty, customerId }, item), customerById(customerId).weightRound === 1 ? 0 : 1)} kg`} from="calc" mono />
+              <Kv k="売上単価" v={`${item.price} 円/kg`} from="master" mono />
+              <Kv k="売上金額（予定）" v={yen(lotAmount({ partNo, qty, customerId }, item))} from="calc" mono />
               <Kv k="完成ライン" v={item.line} from="master" />
-              <Kv k="単価" v={`${item.price}円/${item.priceUnit}`} from="master" mono />
-              <Kv k="売上金額（予定）" v={yen(lotAmount({ partNo, qty }, item))} from="calc" mono />
               <Kv k="指定外注" v={item.outsource ?? "—"} from="master" />
               <Kv k="売上要/不要" v="要" from="master" />
-              <Kv k="丸めルール" v={customerById(customerId).rounding} from="master" />
+              <Kv k="丸めの決まり" v={customerById(customerId).rounding} from="master" />
+              <p className="mt-2 text-[11px] text-ink-muted">売上金額 ＝ 売上重量 × 売上単価（円未満切り捨て）。重量の丸め単位は得意先ごと（想定）。</p>
             </Panel>
             <Panel title="下の段（作業条件・マスタから）" className="xl:col-span-2" pad={false}>
               <div className="overflow-x-auto p-4 pt-2">

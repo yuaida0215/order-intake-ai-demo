@@ -25,8 +25,8 @@ export default function Accounting() {
     if (!k) continue;
     const inv = invoices.find((i) => i.id === d.suggestion.invoiceId)!;
     journals.push({ date: d.date, dr: "普通預金", cr: "売掛金", amount: d.amount, memo: `${customerById(inv.customerId).short} ${inv.id}`, src: "入金消込" });
-    if (k === "fee") journals.push({ date: d.date, dr: "支払手数料", cr: "売掛金", amount: 660, memo: "振込手数料（先方負担分）", src: "入金消込" });
-    if (k === "acceptance") journals.push({ date: d.date, dr: "売上値引", cr: "売掛金", amount: 22000, memo: "検収差額（不良返品）", src: "入金消込" });
+    if (k === "fee") journals.push({ date: d.date, dr: "支払手数料", cr: "売掛金", amount: Math.abs(d.suggestion.diff), memo: "振込手数料（先方負担分）", src: "入金消込" });
+    if (k === "acceptance") journals.push({ date: d.date, dr: "売上値引", cr: "売掛金", amount: Math.abs(d.suggestion.diff), memo: "検収差額（不良返品）", src: "入金消込" });
   }
   // 外注費
   for (const o of OUTSOURCE_ORDERS.filter((x) => x.status.startsWith("戻り"))) journals.push({ date: o.returnAt, dr: "外注加工費", cr: "買掛金", amount: o.cost, memo: `${o.vendor} ${o.process}`, src: "外注加工" });

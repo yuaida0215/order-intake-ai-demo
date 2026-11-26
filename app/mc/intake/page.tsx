@@ -14,7 +14,7 @@ export default function IntakeList() {
       <PageHead kicker="受託加工 STEP 0" title="注文書の取込（AI読み取り）" sub="部品と一緒に届く紙の注文書は複合機でスキャン、FAXは受信と同時に、EDIは自動ダウンロードで、すべてこの一覧に集まります。" />
       <BeforeAfter
         before="注文書（紙・FAX）を目で見て、重い受注入力の画面に1件ずつ手で打つ。CSV一括取込の口はあるが、紙が大部分で使えない。"
-        after="AIが読み取って、取込用Excelの白い列と同じ項目を埋める。人は確認して「受入実行」を押すだけ。久しぶりの品番も自動で分かる。"
+        after="AIが決めた項目だけを読み、取込用Excelの白い列と同じ形に。読みにくい手書きの行だけ色が付くので、人はそこを確かめて「受入実行」。久しぶりの品番も自動で分かる。"
       />
       <Panel title="届いた注文書" sub="12/01 受信分" pad={false}>
         <div className="p-4 pt-2">

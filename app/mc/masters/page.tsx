@@ -77,7 +77,7 @@ export default function Masters() {
       >
         <div className="p-4 pt-1">
           <TableWrap>
-            <thead><tr><th>品番</th><th>商品コード</th><th>商品名</th><th>得意先</th><th>工場</th><th>仕様</th><th className="num">入数</th><th className="num">単重</th><th>前回受注</th><th>改訂</th></tr></thead>
+            <thead><tr><th>品番</th><th>商品コード</th><th>商品名</th><th>得意先</th><th>工場</th><th>加工内容</th><th className="num">入数</th><th className="num">単重</th><th>前回受注</th><th>改訂</th></tr></thead>
             <tbody>
               {items.map((i) => (
                 <tr key={i.partNo} className="cursor-pointer" onClick={() => setSel(i)}>
@@ -113,7 +113,7 @@ export default function Masters() {
             <Kv k="商品コード" v={sel.code} mono />
             <Kv k="得意先 / 工場" v={`${customerById(sel.customerId).short} / ${factoryById(sel.factoryId).name}`} />
             <Kv k="品群 / 処理液" v={`${sel.group} / ${sel.liquid}`} />
-            <Kv k="仕様" v={sel.spec} />
+            <Kv k="加工内容" v={sel.spec} />
             <Kv k="入数 / 単重" v={`${sel.perBox} / ${sel.unitWeightG}g`} mono />
             <Kv k="単価" v={`${sel.price}円/${sel.priceUnit}`} mono />
             <Kv k="完成ライン" v={sel.line} />

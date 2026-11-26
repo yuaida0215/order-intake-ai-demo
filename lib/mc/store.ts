@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import {
   BILLING_GROUPS,
   CUSTOMERS,
+  DEFAULT_FACTORY_GROUP,
   DEMO_TODAY,
   INITIAL_DEPOSITS,
   INITIAL_INVOICES,
@@ -18,6 +19,7 @@ import {
   type CustomerId,
   type FactoryId,
   type Invoice,
+  type InvoiceLine,
   type Lot,
   type LotStatus,
 } from "./data";
@@ -26,7 +28,7 @@ import { judgeH3, lotAmount } from "./calc";
 // ------------------------------------------------------------
 // 役割と拠点（拠点ごとの権限）
 // ------------------------------------------------------------
-export type RoleId = "admin" | "jimu" | "seizo" | "somu";
+export type RoleId = "admin" | "jimu" | "seizo" | "somu" | "eigyo";
 export const ROLES: { id: RoleId; label: string; desc: string; factory: FactoryId | "ALL"; menus: string[] }[] = [
   { id: "admin", label: "管理者（全拠点）", desc: "すべてのメニュー・全拠点", factory: "ALL", menus: ["*"] },
   {
@@ -40,6 +42,10 @@ export const ROLES: { id: RoleId; label: string; desc: string; factory: FactoryI
   {
     id: "somu", label: "総務（全拠点）", desc: "マスタ登録・照合・請求・入金", factory: "ALL",
     menus: ["/mc", "/mc/orders", "/mc/matching", "/mc/billing", "/mc/payments", "/mc/accounting", "/mc/intercompany", "/mc/masters", "/mc/materials", "/mc/goods", "/mc/rfi", "/mc/settings"],
+  },
+  {
+    id: "eigyo", label: "営業部（全拠点）", desc: "受注状況・請求・物販・数字の確認", factory: "ALL",
+    menus: ["/mc", "/mc/orders", "/mc/billing", "/mc/goods", "/mc/cost", "/mc/bi", "/mc/rfi"],
   },
 ];
 
@@ -68,6 +74,7 @@ type State = {
   docsDone: Record<string, { imported: string[]; rejected: string[] }>;
   invoices: Invoice[];
   closedGroups: BillingGroupId[];
+  factoryGroup: Record<FactoryId, BillingGroupId>;
   deposits: Record<string, "matched" | "fee" | "acceptance">;
   newItems: NewItemRequest[];
   fa: FaChange[];
@@ -81,7 +88,8 @@ type Actions = {
   importDoc: (docId: string) => { imported: Lot[]; rejected: string[] };
   createLot: (p: { customerId: CustomerId; partNo: string; boxes: number; qty: number; lotNo: string; dueDate: string }) => Lot;
   advance: (ids: string[], by?: string) => void;
-  completeLot: (id: string, completedQty: number) => void;
+  completeLot: (id: string, completedQty: number, inspection?: Lot["inspection"]) => void;
+  setFactoryGroup: (f: FactoryId, g: BillingGroupId) => void;
   deliver: (ids: string[]) => string;
   matchLots: (ids: string[]) => void;
   closeGroup: (g: BillingGroupId) => Invoice[];
@@ -99,9 +107,10 @@ function initial(): State {
     docsDone: {},
     invoices: INITIAL_INVOICES.map((i) => ({ ...i })),
     closedGroups: [],
+    factoryGroup: { ...DEFAULT_FACTORY_GROUP },
     deposits: {},
     newItems: [],
-    fa: [{ id: "FA-0001", partNo: "90119-12C07", change: "上塗りの焼時間 25分→30分（DS-5号機 パターンP-08）", status: "未配信", at: "11/27 15:20" }],
+    fa: [{ id: "FA-0001", partNo: "90119-12C07", change: "上塗りの焼時間 25分→30分（処理設備373・パターン10）", status: "未配信", at: "11/27 15:20" }],
     seq: 100,
   };
 }
@@ -215,7 +224,9 @@ export const useMc = create<State & Actions>()(
           }),
         }),
 
-      completeLot: (id, completedQty) =>
+      setFactoryGroup: (f, g) => set({ factoryGroup: { ...get().factoryGroup, [f]: g } }),
+
+      completeLot: (id, completedQty, inspection = "合格") =>
         set({
           lots: get().lots.map((l) =>
             l.id === id
@@ -223,11 +234,12 @@ export const useMc = create<State & Actions>()(
                   ...l,
                   status: "completed",
                   completedQty,
+                  inspection,
                   defectQty: Math.max(0, l.qty - completedQty),
                   events: [
                     ...l.events,
                     ...(l.status === "ticketed" ? [{ at: nowLabel(), label: EVENT_LABEL.processing, by: "製造部" }] : []),
-                    { at: nowLabel(), label: `完成入力 ${completedQty.toLocaleString()}個（現品票・完了票を発行）`, by: "製造事務" },
+                    { at: nowLabel(), label: `完成入力 ${completedQty.toLocaleString()}個・検査${inspection}（現品票・完了票を発行）`, by: "製造事務" },
                   ],
                 }
               : l,
@@ -257,32 +269,43 @@ export const useMc = create<State & Actions>()(
         }),
 
       closeGroup: (g) => {
-        const customers = CUSTOMERS.filter((c) => c.group === g);
         const group = BILLING_GROUPS.find((x) => x.id === g)!;
+        const fg = get().factoryGroup;
+        const factories = (Object.keys(fg) as FactoryId[]).filter((f) => fg[f] === g);
         const made: Invoice[] = [];
         let seq = get().seq;
         const lots = [...get().lots];
-        for (const c of customers) {
-          const live = lots.filter((l) => l.customerId === c.id && l.status === "sold");
-          const liveAmount = live.reduce((s, l) => s + lotAmount(l), 0);
-          const base = MONTH_BASE[c.id];
+        for (const c of CUSTOMERS) {
+          const breakdown: InvoiceLine[] = [];
+          const liveIds: string[] = [];
+          for (const f of factories) {
+            const base = MONTH_BASE[c.id][f];
+            const live = lots.filter((l) => l.customerId === c.id && l.factoryId === f && l.status === "sold");
+            if (!base && !live.length) continue;
+            liveIds.push(...live.map((l) => l.id));
+            breakdown.push({ factoryId: f, lots: (base?.lots ?? 0) + live.length, amount: (base?.amount ?? 0) + live.reduce((s, l) => s + lotAmount(l), 0) });
+          }
+          if (!breakdown.length) continue;
           seq += 1;
+          const amount = breakdown.reduce((s, b) => s + b.amount, 0);
           const inv: Invoice = {
             id: `INV-2611-${String(seq).padStart(4, "0")}`,
             customerId: c.id,
             group: g,
-            period: g === "G1" ? "11月度（11/1〜11/30）" : `11月度（${group.cutoff}締め）`,
+            issuer: group.issuer,
+            period: "11月度（11/1〜11/30）",
             issuedAt: DEMO_TODAY,
-            dueAt: g === "G1" ? "2026-12-31" : "2027-01-20",
-            lots: base.lots + live.length,
-            amount: base.amount + liveAmount,
-            tax: Math.round((base.amount + liveAmount) * 0.1),
+            dueAt: "2026-12-31",
+            lots: breakdown.reduce((s, b) => s + b.lots, 0),
+            amount,
+            tax: Math.round(amount * 0.1),
+            breakdown,
             status: "issued",
           };
           made.push(inv);
-          for (const l of live) {
-            const i = lots.findIndex((x) => x.id === l.id);
-            lots[i] = { ...l, status: "billed", invoiceId: inv.id, events: [...l.events, { at: nowLabel(), label: `請求書 ${inv.id} に計上（${group.name}）`, by: "総務" }] };
+          for (const id of liveIds) {
+            const i = lots.findIndex((x) => x.id === id);
+            lots[i] = { ...lots[i], status: "billed", invoiceId: inv.id, events: [...lots[i].events, { at: nowLabel(), label: `請求書 ${inv.id} に計上（${group.name}・発行元 ${group.issuer}）`, by: "総務" }] };
           }
         }
         set({ lots, seq, invoices: [...made, ...get().invoices], closedGroups: [...get().closedGroups, g] });
@@ -300,7 +323,7 @@ export const useMc = create<State & Actions>()(
                   ...i,
                   status: "paid",
                   paidAmount: dep.amount,
-                  diffNote: kind === "fee" ? "振込手数料 660円を支払手数料で処理" : kind === "acceptance" ? "検収差額 22,000円を売上値引で処理（差額調整書を送付）" : undefined,
+                  diffNote: kind === "fee" ? `振込手数料 ${Math.abs(dep.suggestion.diff).toLocaleString()}円を支払手数料で処理` : kind === "acceptance" ? `検収差額 ${Math.abs(dep.suggestion.diff).toLocaleString()}円を売上値引で処理（差額調整書を送付）` : undefined,
                 }
               : i,
           ),
@@ -317,7 +340,7 @@ export const useMc = create<State & Actions>()(
 
       reset: () => set(initial()),
     }),
-    { name: "mc-demo-v1", version: 1 },
+    { name: "mc-demo-v2", version: 2 },
   ),
 );
 

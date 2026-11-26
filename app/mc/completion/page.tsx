@@ -2,35 +2,18 @@
 
 import { useState } from "react";
 import { customerById, factoryById, itemByPartNo, type Lot } from "@/lib/mc/data";
-import { md, num, totalKg } from "@/lib/mc/calc";
+import { applyRule, md, num } from "@/lib/mc/calc";
 import { inScope, useMc } from "@/lib/mc/store";
 import { WorkTicket } from "@/components/mc/docs";
 import { BeforeAfter, Barcode, Btn, Chip, H3Badge, PageHead, Panel, Sheet, StatusChip, Toast } from "@/components/mc/ui";
 
 const hand = { fontFamily: '"Comic Sans MS","Segoe Print","Bradley Hand",cursive', color: "#1d3f8f" };
 
-/** 作業票に手書きされた完成数量（デモ用に決め打ち） */
-const handwritten = (l: Lot) => l.qty - (l.qty % 7) * 2;
-
-function applyRounding(l: Lot, read: number): { value: number; note: string } {
-  const it = itemByPartNo(l.partNo)!;
-  const c = customerById(l.customerId);
-  switch (l.customerId) {
-    case "C001":
-      return { value: read, note: `${Math.floor(read / it.perBox)}箱＋端数${read % it.perBox}個（端数は端数箱として現品票を分ける）` };
-    case "C002":
-    case "C009":
-      return { value: Math.floor(read / 10) * 10, note: `10個未満切り捨て：${num(read)} → ${num(Math.floor(read / 10) * 10)}` };
-    case "C005":
-      return { value: Math.floor(read / 100) * 100, note: `100個単位で切り捨て：${num(read)} → ${num(Math.floor(read / 100) * 100)}` };
-    case "C003":
-    case "C006":
-    case "C008":
-      return { value: read, note: `請求はkg：${num(Math.round(totalKg(read, it.unitWeightG) * 10) / 10, 1)}kg（${c.rounding}）` };
-    default:
-      return { value: read, note: c.rounding };
-  }
-}
+/** 作業票に手書きされた完成数量（デモ用に決め打ち。ロットごとに差のばらつき） */
+const handwritten = (l: Lot) => {
+  const k = [...l.ticketNo].reduce((s, ch) => s + ch.charCodeAt(0), 0) % 5;
+  return l.qty - Math.round(l.qty * [0.003, 0, 0.026, 0.002, 0.009][k]);
+};
 
 export default function Completion() {
   const lots = useMc((s) => s.lots);
@@ -42,6 +25,7 @@ export default function Completion() {
   const [read, setRead] = useState<number | null>(null);
   const [reading, setReading] = useState(false);
   const [qty, setQty] = useState<number | null>(null);
+  const [inspection, setInspection] = useState<"合格" | "条件付き合格" | "不合格">("合格");
   const [toast, setToast] = useState("");
   const [preview, setPreview] = useState<Lot | null>(null);
   const sel = waiting.find((l) => l.id === selId) ?? null;
@@ -50,6 +34,7 @@ export default function Completion() {
     setSelId(l.id);
     setRead(null);
     setQty(null);
+    setInspection("合格");
   };
   const scan = () => waiting[0] && pick(waiting.find((l) => l.status === "processing") ?? waiting[0]);
   const aiRead = () => {
@@ -58,14 +43,15 @@ export default function Completion() {
     setTimeout(() => {
       const v = handwritten(sel);
       setRead(v);
-      setQty(applyRounding(sel, v).value);
+      const r = applyRule(sel, v);
+      setQty(r.needsHuman ? null : r.value);
       setReading(false);
     }, 900);
   };
   const submit = () => {
     if (!sel || qty == null) return;
-    completeLot(sel.id, qty);
-    const done = { ...sel, status: "completed" as const, completedQty: qty, defectQty: sel.qty - qty };
+    completeLot(sel.id, qty, inspection);
+    const done = { ...sel, status: "completed" as const, completedQty: qty, defectQty: Math.max(0, sel.qty - qty), inspection };
     setPreview(done);
     setSelId(null);
     setToast(`${sel.ticketNo} を完成登録。現品票・完了票を発行しました`);
@@ -74,10 +60,10 @@ export default function Completion() {
 
   return (
     <div>
-      <PageHead kicker="受託加工 STEP 3" title="完成入力" sub="終わった作業票が戻ったら、バーコードを読むだけで該当ロットが開きます。伝票番号を打つ必要はありません。" />
+      <PageHead kicker="受託加工 STEP 3" title="完成入力・検査" sub="終わった作業票が戻ったら、バーコードを読むだけで該当ロットが開きます。手書きの完成数量はAIが読み、取引先ごとの丸めの決まりを当てて、検査の合否と一緒に登録します。" />
       <BeforeAfter
         before="戻った作業票を見て伝票番号を打ち、手書きの完成数量を入力。手書きが読みにくい。取引先ごとの丸めルールを人が覚えている。"
-        after="作業票のバーコードを読む → 手書きの完成数量はAIが読み取り → 得意先の丸めルールを自動で適用。人は確認して登録するだけ。"
+        after="作業票のバーコードを読む → 手書きの完成数量はAIが読み取り → 得意先の丸めの決まりを当てる。差が決まりの幅を超えた時だけ、人が数量を確定。検査の合否もここで記録。"
       />
 
       <div className="grid gap-5 lg:grid-cols-[1fr_1.1fr]">
@@ -151,22 +137,49 @@ export default function Completion() {
               ) : (
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between rounded-lg bg-accent-soft px-3 py-2 text-[12.5px]">
-                    <span className="text-accent-600">AIの読み取り</span>
-                    <span className="font-mono text-[15px] font-bold text-ink">{num(read)}個 <Chip tone="cyan">信頼度 96%</Chip></span>
+                    <span className="text-accent-600">手書きの完成数量（読めたまま）</span>
+                    <span className="font-mono text-[15px] font-bold text-ink">{num(read)}個</span>
                   </div>
-                  <div className="rounded-lg bg-violet-50 px-3 py-2 text-[12px] text-violet-800">
-                    <b>丸めルール（{customerById(sel.customerId).short}）</b>：{applyRounding(sel, read).note}
+                  {(() => {
+                    const r = applyRule(sel, read);
+                    return (
+                      <div className={`rounded-lg px-3 py-2 text-[12px] leading-relaxed ${r.needsHuman ? "border border-amber-300 bg-amber-50 text-amber-900" : "bg-violet-50 text-violet-800"}`}>
+                        <div><b>丸めの決まり（{customerById(sel.customerId).short}）</b>：{r.ruleLabel}<span className="ml-1 text-[10.5px] opacity-70">※想定</span></div>
+                        <div className="mt-0.5">{r.note}</div>
+                        {r.needsHuman && (
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            <Btn size="sm" variant={qty === read ? "primary" : "secondary"} onClick={() => setQty(read)}>完成数のまま {num(read)}</Btn>
+                            <Btn size="sm" variant={qty === sel.qty ? "primary" : "secondary"} onClick={() => setQty(sel.qty)}>注文数 {num(sel.qty)}</Btn>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  <div>
+                    <label className="block text-[12px] font-semibold text-ink-muted">検査（RFI：完成数量の入力・検査合否管理）</label>
+                    <div className="mt-1 grid grid-cols-3 gap-2">
+                      {(["合格", "条件付き合格", "不合格"] as const).map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setInspection(v)}
+                          className={`h-9 rounded-lg border text-[12.5px] font-semibold ${inspection === v ? (v === "合格" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : v === "不合格" ? "border-rose-500 bg-rose-50 text-rose-700" : "border-amber-500 bg-amber-50 text-amber-800") : "border-line bg-white text-ink-soft"}`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <label className="block text-[12px] font-semibold text-ink-muted">登録する完成数量</label>
+                  <label className="block text-[12px] font-semibold text-ink-muted">計上する完成数量</label>
                   <input
                     type="number"
                     inputMode="numeric"
-                    value={qty ?? 0}
+                    value={qty ?? ""}
+                    placeholder="上のどちらかを選ぶか、数量を入力"
                     onChange={(e) => setQty(Number(e.target.value) || 0)}
                     className="h-12 w-full rounded-lg border border-line-strong px-3 text-[18px] font-bold tabular-nums focus:border-brand-500 focus:outline-none"
                   />
                   {qty != null && qty < sel.qty && <div className="text-[12px] text-amber-700">注文数量との差 {num(sel.qty - qty)}個 → 照合画面で「差異あり」として出ます</div>}
-                  <Btn variant="primary" className="w-full" onClick={submit}>完成登録（現品票・完了票を発行）</Btn>
+                  <Btn variant="primary" className="w-full" onClick={submit} disabled={qty == null || qty <= 0}>完成登録（現品票・完了票を発行）</Btn>
                 </div>
               )}
             </div>

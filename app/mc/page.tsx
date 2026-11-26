@@ -32,7 +32,7 @@ export default function McHome() {
     { show: true, n: lots.filter((l) => l.status === "ticketed" || l.status === "processing").length, label: "完成入力待ち", sub: "戻った作業票のバーコードを読んで完成数量を入力", href: "/mc/completion", tone: "gray" },
     { show: true, n: lots.filter((l) => l.status === "completed").length, label: "納品書の発行待ち", sub: "完成済み。得意先ごとにまとめて納品書", href: "/mc/shipping", tone: "gray" },
     { show: diffLots.length > 0, n: diffLots.length, label: "照合で差異あり", sub: "注文数量と完成数量が違う（不良など）", href: "/mc/matching", tone: "red" },
-    { show: !s.closedGroups.includes("G1") && s.role !== "jimu" && s.role !== "seizo", n: 1, label: "月末締め（11月度）の請求", sub: "請求グループ「月末締め」の締め処理", href: "/mc/billing", tone: "gray" },
+    { show: s.closedGroups.length < 4 && s.role !== "jimu" && s.role !== "seizo", n: 4 - Math.min(4, s.closedGroups.filter((g) => g !== "G5").length), label: "11月度の請求（請求グループの締め）", sub: "名古屋4工場→中川本社工場から1枚に、など5グループで集約請求", href: "/mc/billing", tone: "gray" },
     { show: openDeposits.length > 0 && s.role !== "jimu" && s.role !== "seizo", n: openDeposits.length, label: "未消込の入金（11/30着金）", sub: "AIが消込候補と差額の理由を提示済み", href: "/mc/payments", tone: "gray" },
   ].filter((t) => t.show);
 
@@ -43,6 +43,12 @@ export default function McHome() {
         title="今日の仕事"
         sub="注文書が届いてから入金されるまでを、1つのシステムで最後までつなげています。番号や件数をタップすると、その画面に移ります。"
       />
+
+      <div className="mb-5 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-white px-4 py-3 text-[12.5px] leading-relaxed text-ink-soft">
+        <b className="text-brand-700">11/19ご提案「道筋B：刷新の範囲まで一緒に作る」の画面イメージです。</b>
+        マスタ・作業票・完成数量・請求・会計へのデータ渡しを、注文書の読み取りと1つの仕組みにした場合の姿です。
+        RFI（基幹システム更新 v4 Draft）の要件ごとの対応は<Link href="/mc/rfi" className="mx-0.5 font-semibold text-brand-600 underline">RFI対応表</Link>にまとめています。
+      </div>
 
       {/* 一気通貫フロー */}
       <Panel title="受注から入金まで（ロットの流れ）" sub="1ロット＝1枚の作業票。同じ番号のまま最後までつながる" className="mb-5">
@@ -102,9 +108,9 @@ export default function McHome() {
               {[
                 ["注文書の取込", "/mc/intake/D-1201-01", "手書きの訂正・3Hを見せる"],
                 ["受注入力（4項目だけ）", "/mc/orders/new", "先方の画面と同じ数字"],
-                ["完成入力", "/mc/completion", "手書きの完成数量をAIで"],
+                ["完成入力・検査", "/mc/completion", "丸めの決まり±0.5%"],
                 ["納品書→照合", "/mc/shipping", "照合は差異だけ人が見る"],
-                ["請求（5グループ）→入金消込", "/mc/billing", "検収差額の理由まで"],
+                ["請求（5グループ）→入金消込", "/mc/billing", "複数工場を1枚に集約"],
                 ["1ロットの一生", "/mc/lots/KN-2611-3330", "全部つながっている"],
                 ["RFI対応表", "/mc/rfi", "要件ごとに画面で回答"],
               ].map(([label, href, note], i) => (

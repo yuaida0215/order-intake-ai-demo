@@ -1,4 +1,4 @@
-import { DEMO_TODAY, itemByPartNo, type H3, type Item, type Lot } from "./data";
+import { DEMO_TODAY, ROUND_RULES, customerById, itemByPartNo, type H3, type Item, type Lot } from "./data";
 
 export const yen = (n: number) => `¥${Math.round(n).toLocaleString("ja-JP")}`;
 export const num = (n: number, digits = 0) =>
@@ -26,28 +26,53 @@ export function judgeH3(partNo: string, today = DEMO_TODAY): { h3?: H3; reason: 
   return { reason: `前回受注 ${md(item.lastOrder)}（${d}日前）・条件変更なし` };
 }
 
-/** 売上金額（完成数量ベース。kg単価は小数第1位で四捨五入した重量×単価） */
-export function lotAmount(lot: Pick<Lot, "partNo" | "qty" | "completedQty">, item?: Item): number {
+/** 売上重量(kg)：得意先ごとの丸め単位で四捨五入（先方画面: 238.88kg → 239kg） */
+export function salesKg(lot: Pick<Lot, "partNo" | "qty" | "completedQty" | "customerId">, item?: Item): number {
   const it = item ?? itemByPartNo(lot.partNo);
   if (!it) return 0;
-  const q = lot.completedQty ?? lot.qty;
-  if (it.priceUnit === "kg") return Math.round(Math.round(totalKg(q, it.unitWeightG) * 10) / 10 * it.price);
-  return Math.round(q * it.price);
+  const kg = totalKg(lot.completedQty ?? lot.qty, it.unitWeightG);
+  return customerById(lot.customerId).weightRound === 1 ? Math.round(kg) : Math.round(kg * 10) / 10;
 }
 
-/** ロット原価（材料費＝処理液、加工費＝ラインのチャージ、外注費） */
-export function lotCost(lot: Pick<Lot, "partNo" | "qty" | "completedQty">) {
+/** 売上金額 = 売上重量 × kg単価（円未満切り捨て）— 先方画面: 239kg × 35.81円 = 8,558円 */
+export function lotAmount(lot: Pick<Lot, "partNo" | "qty" | "completedQty" | "customerId">, item?: Item): number {
+  const it = item ?? itemByPartNo(lot.partNo);
+  if (!it) return 0;
+  if (it.priceUnit === "個") return Math.floor((lot.completedQty ?? lot.qty) * it.price);
+  return Math.floor(salesKg(lot, it) * it.price + 1e-6);
+}
+
+/** ロット原価（材料費＝処理液、労務費＝作業時間、設備費＝ライン・炉、外注費） */
+export function lotCost(lot: Pick<Lot, "partNo" | "qty" | "completedQty" | "customerId">) {
   const it = itemByPartNo(lot.partNo);
-  if (!it) return { material: 0, process: 0, outsource: 0, total: 0, sales: 0, margin: 0, rate: 0 };
+  if (!it) return { material: 0, labor: 0, equipment: 0, outsource: 0, total: 0, sales: 0, margin: 0, rate: 0 };
   const q = lot.completedQty ?? lot.qty;
   const kg = totalKg(q, it.unitWeightG);
   const coats = it.steps.length;
-  const material = Math.round(kg * 4.2 * coats); // 処理液の使用量（kgあたり・塗り回数分）
-  const process = Math.round(kg * 19 * coats + 1200); // ライン時間のチャージ＋段取り
-  const outsource = it.outsource ? Math.round(q * 15) : 0;
-  const total = material + process + outsource;
+  const material = Math.round(kg * 1.8 * coats); // 処理液の使用量
+  const labor = Math.round(kg * 2.9 * coats + 180); // 段取り・投入・検査の作業時間
+  const equipment = Math.round(kg * 2.3 * coats + 120); // ライン・焼付炉の稼働
+  const outsource = it.outsource ? Math.round(kg * 25) : 0;
+  const total = material + labor + equipment + outsource;
   const sales = lotAmount(lot, it);
-  return { material, process, outsource, total, sales, margin: sales - total, rate: sales ? (sales - total) / sales : 0 };
+  return { material, labor, equipment, outsource, total, sales, margin: sales - total, rate: sales ? (sales - total) / sales : 0 };
+}
+
+/** 完成数量の丸め（11/19提案資料の想定3つ）。needsHuman=true なら人が確定 */
+export function applyRule(lot: Pick<Lot, "customerId" | "qty">, read: number): { value: number; note: string; needsHuman: boolean; ruleLabel: string } {
+  const c = customerById(lot.customerId);
+  const ruleLabel = ROUND_RULES[c.rule];
+  if (c.rule === "hundred") {
+    const v = Math.floor(read / 100) * 100;
+    return { value: v, note: `${num(read)} → ${num(v)}`, needsHuman: false, ruleLabel };
+  }
+  if (c.rule === "order_if_close") {
+    const diff = (read - lot.qty) / lot.qty;
+    const d = `${diff >= 0 ? "+" : "−"}${Math.abs(diff * 100).toFixed(2)}%`;
+    if (Math.abs(diff) <= 0.005) return { value: lot.qty, note: `注文数との差 ${d}（±0.5%以内）→ 注文数 ${num(lot.qty)} で計上`, needsHuman: false, ruleLabel };
+    return { value: read, note: `注文数との差 ${d}。決まりの幅（±0.5%）を超えているため、計上する数量は人が確定します`, needsHuman: true, ruleLabel };
+  }
+  return { value: read, note: `${num(read)} をそのまま計上`, needsHuman: false, ruleLabel };
 }
 
 /** 作業票などに印字するバーコードの縞（見た目用） */

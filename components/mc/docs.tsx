@@ -136,7 +136,7 @@ export function WorkTicket({ lot, title = "作 業 票" }: { lot: Lot; title?: "
         <Cell k="品番" v={lot.partNo} />
         <Cell k="商品名" v={it.name} />
         <Cell k="ロットNo" v={lot.lotNo} />
-        <Cell k="仕様" v={it.spec} />
+        <Cell k="加工内容" v={it.spec} />
         <Cell k="入数×箱数" v={`${it.perBox}×${lot.boxes}`} />
         <Cell k={title === "作 業 票" ? "数量" : "完成数量"} v={num(q)} strong />
         <Cell k="単重" v={`${it.unitWeightG}g`} />
@@ -181,7 +181,14 @@ export function WorkTicket({ lot, title = "作 業 票" }: { lot: Lot; title?: "
           </div>
         </>
       )}
-      {lot.h3 && (
+      {title === "完 了 票" && (
+        <div className="mt-2 flex flex-wrap gap-3 rounded border border-slate-400 px-2 py-1.5 text-[11.5px]">
+          <span>検査：<b>{lot.inspection ?? "合格"}</b></span>
+          <span>不良数：<b>{lot.defectQty ?? 0}</b></span>
+          <span>完成日：<b>12/1</b></span>
+        </div>
+      )}
+      {lot.h3 && title === "作 業 票" && (
         <div className="mt-2 rounded border-2 border-rose-500 px-2 py-1 text-[11px] font-bold text-rose-600">
           【3H：{lot.h3}】作業前に処理条件を確認すること
         </div>
@@ -247,7 +254,7 @@ export function DeliveryNote({ lots, no }: { lots: Lot[]; no: string }) {
           </tbody>
         </table>
       </div>
-      <div className="mt-2 text-[10.5px] text-slate-500">様式：{f.short}工場 標準様式（得意先指定様式への切替可）　控は照合用に自動保存</div>
+      <div className="mt-2 text-[10.5px] text-slate-500">様式：{f.name} 標準様式（得意先指定様式への切替可）　控は照合用に自動保存</div>
     </div>
   );
 }
@@ -264,12 +271,13 @@ export function InvoicePreview({ inv }: { inv: Invoice }) {
         <div>
           <div className="text-[20px] font-bold tracking-[0.4em]">請 求 書</div>
           <div className="mt-2 text-[13px] font-bold">{c.name} 御中</div>
-          <div className="mt-1 text-[11px] text-slate-600">{inv.period}／請求グループ：{g.name}（{g.pay}）</div>
+          <div className="mt-1 text-[11px] text-slate-600">{inv.period}／得意先コード {c.code}</div>
         </div>
         <div className="text-right text-[11px] leading-tight">
           <div>No. {inv.id}</div>
           <div>発行日 {inv.issuedAt.replaceAll("-", "/")}</div>
           <div className="mt-1 font-bold">株式会社ＭＣシステムズ</div>
+          <div>{inv.issuer}（{g.name}）</div>
           <div>登録番号 T0000000000000</div>
         </div>
       </div>
@@ -277,12 +285,32 @@ export function InvoicePreview({ inv }: { inv: Invoice }) {
         <span className="text-[12px] font-semibold">ご請求金額（税込）</span>
         <span className="text-[22px] font-bold tabular-nums">{yen(inv.amount + inv.tax)}</span>
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-[11.5px]">
-        <div className="rounded bg-slate-50 p-2"><div className="text-slate-500">納品ロット数</div><div className="font-bold">{num(inv.lots)}件</div></div>
-        <div className="rounded bg-slate-50 p-2"><div className="text-slate-500">税抜金額</div><div className="font-bold">{yen(inv.amount)}</div></div>
-        <div className="rounded bg-slate-50 p-2"><div className="text-slate-500">消費税（10%）</div><div className="font-bold">{yen(inv.tax)}</div></div>
-      </div>
+      <table className="mt-3 w-full border-collapse text-[11.5px]">
+        <thead>
+          <tr className="bg-slate-100">
+            <th className="border border-slate-400 px-2 py-1 text-left">納品工場</th>
+            <th className="border border-slate-400 px-2 py-1 text-right">納品ロット数</th>
+            <th className="border border-slate-400 px-2 py-1 text-right">金額（税抜）</th>
+          </tr>
+        </thead>
+        <tbody>
+          {inv.breakdown.map((b) => (
+            <tr key={b.factoryId}>
+              <td className="border border-slate-400 px-2 py-1">{factoryById(b.factoryId).name}</td>
+              <td className="border border-slate-400 px-2 py-1 text-right">{num(b.lots)}件</td>
+              <td className="border border-slate-400 px-2 py-1 text-right">{yen(b.amount)}</td>
+            </tr>
+          ))}
+          <tr>
+            <td className="border border-slate-400 px-2 py-1 font-semibold">小計 / 消費税（10%）</td>
+            <td className="border border-slate-400 px-2 py-1 text-right">{num(inv.lots)}件</td>
+            <td className="border border-slate-400 px-2 py-1 text-right">{yen(inv.amount)} / {yen(inv.tax)}</td>
+          </tr>
+        </tbody>
+      </table>
+      {inv.breakdown.length > 1 && <div className="mt-2 text-[11px] font-semibold text-brand-700">{inv.breakdown.length}工場分の売上を、発行元 {inv.issuer} から1枚にまとめて請求</div>}
       <div className="mt-2 text-[10.5px] text-slate-500">明細は納品書（作業票No.単位）ごとに別紙。お支払期日 {inv.dueAt.replaceAll("-", "/")}</div>
+      {inv.diffNote && <div className="mt-2 rounded bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700">入金：{inv.diffNote}</div>}
     </div>
   );
 }

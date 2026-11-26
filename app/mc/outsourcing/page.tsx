@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { OUTSOURCE_ORDERS, customerById, factoryById, itemByPartNo } from "@/lib/mc/data";
-import { num, yen } from "@/lib/mc/calc";
+import { lotCost, num, yen } from "@/lib/mc/calc";
 import { inScope, useMc } from "@/lib/mc/store";
 import { BeforeAfter, Btn, Chip, PageHead, Panel, TableWrap, Toast } from "@/components/mc/ui";
 
@@ -33,7 +33,7 @@ export default function Outsourcing() {
                       <td>{it.outsource}</td>
                       <td>ショットブラスト（前処理）</td>
                       <td className="num">{num(l.qty)}</td>
-                      <td className="num">{yen(l.qty * 15)}</td>
+                      <td className="num">{yen(lotCost(l).outsource)}</td>
                       <td>{sent.includes(l.id) ? <Chip tone="green">送付済み</Chip> : <Btn size="sm" variant="primary" onClick={() => { setSent([...sent, l.id]); setToast("外注指示書を外注先へ送付しました（FAX/メール）"); setTimeout(() => setToast(""), 2200); }}>外注指示書を送る</Btn>}</td>
                     </tr>
                   );
